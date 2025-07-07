@@ -9,6 +9,7 @@ import canteenStaffRoutes from "./routes/canteenStaff.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import statsRoutes from "./routes/stats.routes.js";
 import menuRoutes from "./routes/menu.routes.js";
+import identityRoutes from './routes/identity.routes.js';
 
 dotenv.config();
 const app = express();
@@ -22,6 +23,7 @@ app.use("/api/canteen-staff", canteenStaffRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/menu", menuRoutes);
+app.use("/api/identity", identityRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)

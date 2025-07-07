@@ -1,384 +1,183 @@
 import React, { useState } from 'react';
-import { Upload, FileText, Image, X, Check, ArrowLeft, UtensilsCrossed, GraduationCap, CreditCard } from 'lucide-react';
+import { Check } from 'lucide-react';
+import WebcamSection from '../WebcamSection';
+
+const dataURLtoFile = (dataurl, filename) => {
+  let arr = dataurl.split(',');
+  let mime = arr[0].match(/:(.*?);/)[1];
+  let bstr = atob(arr[1]);
+  let n = bstr.length;
+  let u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+};
+
 const DocumentUpload = ({ data, updateData, onPrev }) => {
-  const [documents, setDocuments] = useState(data.documents || [
-    { name: 'student_id_card.jpg', size: 102400, type: 'image/jpeg' },
-    { name: 'hostel_allotment_letter.pdf', size: 204800, type: 'application/pdf' },
-    { name: 'fee_payment_receipt.png', size: 51200, type: 'image/png' },
-  ]);
-  const [dragActive, setDragActive] = useState(false);
+  const [documentFile, setDocumentFile] = useState(null);
+  const [webcamFile, setWebcamFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [showWebcam, setShowWebcam] = useState(false);
 
   const acceptedFileTypes = [
     'application/pdf',
     'image/jpeg',
     'image/jpg',
     'image/png',
-    'image/gif'
+    'image/gif',
   ];
 
   const maxFileSize = 10 * 1024 * 1024; // 10MB
 
-  const requiredDocuments = [
-    {
-      title: 'Student ID Card',
-      description: 'Clear photo of your student identification card',
-      icon: GraduationCap,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
-    },
-    {
-      title: 'Hostel Allotment Letter',
-      description: 'Official hostel room allotment document',
-      icon: FileText,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      title: 'Fee Payment Receipt',
-      description: 'Proof of mess/canteen fee payment',
-      icon: CreditCard,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
+  const handleDocumentUpload = (files) => {
+    const file = files[0];
+    if (!acceptedFileTypes.includes(file.type)) {
+      alert(`File type ${file.type} is not supported`);
+      return;
     }
-  ];
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
+    if (file.size > maxFileSize) {
+      alert(`File ${file.name} is too large. Maximum size is 10MB`);
+      return;
     }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(Array.from(e.dataTransfer.files));
-    }
-  };
-
-  const handleChange = (e) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      handleFiles(Array.from(e.target.files));
-    }
-  };
-
-  const handleFiles = (files) => {
-    const validFiles = files.filter(file => {
-      if (!acceptedFileTypes.includes(file.type)) {
-        alert(`File type ${file.type} is not supported`);
-        return false;
-      }
-      if (file.size > maxFileSize) {
-        alert(`File ${file.name} is too large. Maximum size is 10MB`);
-        return false;
-      }
-      return true;
-    });
-
-    const newDocuments = [...documents, ...validFiles];
-    setDocuments(newDocuments);
-    updateData({ documents: newDocuments });
-  };
-
-  const removeDocument = (index) => {
-    const newDocuments = documents.filter((_, i) => i !== index);
-    setDocuments(newDocuments);
-    updateData({ documents: newDocuments });
-  };
-
-  const getFileIcon = (fileType) => {
-    if (fileType === 'application/pdf') {
-      return <FileText className="w-8 h-8 text-red-500" />;
-    }
-    return <Image className="w-8 h-8 text-orange-500" />;
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    setDocumentFile(file);
+    updateData({ documentFile: file });
   };
 
   const handleSubmit = async () => {
-    if (documents.length === 0) {
-      alert('Please upload at least one document');
+    if (!documentFile) {
+      alert('Please upload your document');
+      return;
+    }
+    if (!webcamFile) {
+      alert('Please capture your image using the webcam');
       return;
     }
 
     setIsSubmitting(true);
 
-    // Mock submission delay
-    setTimeout(() => {
-      setIsComplete(true);
-      setIsSubmitting(false);
-    }, 1500);
-
-    // Commented out actual API call
-    /*
     const formData = new FormData();
-    for (const key in data) {
-      if (key !== 'documents') {
-        formData.append(key, data[key]);
-      }
-    }
-    documents.forEach((doc) => {
-      formData.append('documents', doc);
-    });
+    formData.append('document', documentFile);
+    formData.append('live', webcamFile);
 
     try {
-      const res = await axios.post('/api/auth/complete-signup', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await fetch('http://localhost:8000/api/identity/verify', {
+        method: 'POST',
+        body: formData,
       });
-      if (res.data.message) {
+
+      const result = await response.json();
+
+      if (result.success) {
         setIsComplete(true);
+      } else {
+        alert(result.message || 'Verification failed');
       }
-    } catch (err) {
-      console.error('Signup completion failed:', err.response?.data || err);
-      alert(err.response?.data?.error || 'Signup failed. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error('Verification error:', error);
+      alert('An error occurred while verifying identity');
     }
-    */
+
+    setIsSubmitting(false);
   };
 
   if (isComplete) {
     return (
-      <div className="max-w-2xl mx-auto text-center">
-        <div className="w-32 h-32 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
-          <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+      <div className="text-center max-w-2xl mx-auto">
+        <div className="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center">
             <Check className="w-12 h-12 text-white" />
           </div>
         </div>
-        
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">🎉 Welcome to FoodieHub!</h2>
-        <p className="text-xl text-gray-600 mb-8">
-          Your registration is complete! Get ready for an amazing dining experience.
-        </p>
-        
-        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-2xl p-8 mb-8">
-          <h3 className="text-2xl font-bold text-orange-800 mb-4">🍽️ What's Next?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <span className="text-white font-bold text-sm">1</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-orange-800">Account Activation</h4>
-                <p className="text-orange-700 text-sm">Your account will be activated within 24 hours</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <span className="text-white font-bold text-sm">2</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-orange-800">Meal Card Collection</h4>
-                <p className="text-orange-700 text-sm">Collect your meal card from the mess office</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <span className="text-white font-bold text-sm">3</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-orange-800">App Access</h4>
-                <p className="text-orange-700 text-sm">Download our mobile app for easy ordering</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <span className="text-white font-bold text-sm">4</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-orange-800">Start Dining!</h4>
-                <p className="text-orange-700 text-sm">Enjoy delicious meals and exclusive offers</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
-          <p className="text-green-800 text-lg">
-            <strong>📧 Confirmation sent to:</strong><br />
-            <span className="text-2xl font-mono">{data.email}</span>
-          </p>
-          <p className="text-green-700 text-sm mt-2">
-            Check your email for login credentials and next steps
-          </p>
-        </div>
-
-        <div className="mt-8 flex justify-center gap-4">
-          <div className="flex items-center gap-2 text-orange-600">
-            <UtensilsCrossed className="w-5 h-5" />
-            <span className="font-semibold">Fresh Meals Daily</span>
-          </div>
-          <div className="flex items-center gap-2 text-amber-600">
-            <span className="text-2xl">⭐</span>
-            <span className="font-semibold">Premium Quality</span>
-          </div>
-        </div>
+        <h2 className="text-4xl font-bold">🎉 Welcome to FoodieHub!</h2>
+        <p className="text-lg mt-2">Your registration is complete!</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-10">
-        <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-amber-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-          <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center">
-            <Upload className="w-8 h-8 text-white" />
-          </div>
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">Upload Required Documents</h2>
-        <p className="text-lg text-gray-600">Upload your documents to complete the registration process</p>
+    <div className="max-w-4xl mx-auto space-y-10">
+      <h2 className="text-3xl font-bold text-center">📄 Upload Your ID Document</h2>
+
+      <div
+        className="border-2 border-dashed p-6 rounded-lg text-center hover:bg-orange-50 transition"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          handleDocumentUpload(Array.from(e.dataTransfer.files));
+        }}
+      >
+        <p className="mb-2">Drag and drop your ID here or</p>
+        <label className="text-blue-600 underline cursor-pointer">
+          Browse
+          <input
+            type="file"
+            onChange={(e) => handleDocumentUpload(Array.from(e.target.files))}
+            className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png,.gif"
+          />
+        </label>
       </div>
 
-      <div className="space-y-8">
-        {/* Required Documents Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {requiredDocuments.map((doc, index) => {
-            const Icon = doc.icon;
-            return (
-              <div key={index} className={`${doc.bgColor} border-2 border-opacity-20 rounded-2xl p-6 text-center`}>
-                <div className={`w-16 h-16 ${doc.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                  <Icon className={`w-8 h-8 ${doc.color}`} />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">{doc.title}</h3>
-                <p className="text-sm text-gray-600">{doc.description}</p>
-              </div>
-            );
-          })}
+      {documentFile && (
+        <div className="bg-gray-50 p-4 rounded shadow">
+          <p className="font-medium">{documentFile.name}</p>
+          <p className="text-sm text-gray-500">{(documentFile.size / 1024).toFixed(1)} KB</p>
+          <button
+            onClick={() => setDocumentFile(null)}
+            className="text-red-500 hover:text-red-700 mt-2"
+          >
+            ✕ Remove
+          </button>
         </div>
+      )}
 
-        {/* Upload Area */}
-        <div
-          className={`border-3 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
-            dragActive
-              ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 scale-105'
-              : 'border-gray-300 hover:border-orange-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50'
-          }`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Upload className="w-10 h-10 text-orange-600" />
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Drop your files here, or''
-            <label className="text-orange-600 hover:text-orange-700 cursor-pointer font-bold underline decoration-2 underline-offset-2">
-              browse files
-              <input
-                type="file"
-                multiple
-                onChange={handleChange}
-                accept=".pdf,.jpg,.jpeg,.png,.gif"
-                className="hidden"
-              />
-            </label>
-          </h3>
-          <p className="text-lg text-gray-600 mb-4">
-            Support for PDF, JPG, PNG, GIF up to 10MB each
-          </p>
-          <div className="flex justify-center gap-4 text-sm text-gray-500">
-            <span className="bg-gray-100 px-3 py-1 rounded-full">PDF</span>
-            <span className="bg-gray-100 px-3 py-1 rounded-full">JPG</span>
-            <span className="bg-gray-100 px-3 py-1 rounded-full">PNG</span>
-            <span className="bg-gray-100 px-3 py-1 rounded-full">GIF</span>
+      <button
+        onClick={() => setShowWebcam(true)}
+        className="w-full py-3 bg-blue-100 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-200"
+      >
+        📷 Capture Photo from Webcam
+      </button>
+
+      {webcamFile && (
+        <div className="text-sm text-green-700">✅ Webcam photo captured</div>
+      )}
+
+      {showWebcam && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl p-6 shadow-xl relative">
+            <button
+              onClick={() => setShowWebcam(false)}
+              className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-xl"
+            >
+              ×
+            </button>
+            <WebcamSection
+              onCapture={(imageData) => {
+                const blob = dataURLtoFile(imageData, `webcam_${Date.now()}.jpg`);
+                setWebcamFile(blob);
+                setShowWebcam(false);
+              }}
+            />
           </div>
         </div>
+      )}
 
-        {/* Document List */}
-        {documents.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <FileText className="w-6 h-6 text-orange-600" />
-              Uploaded Documents ({documents.length})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {documents.map((doc, index) => (
-                <div key={index} className="flex items-center justify-between p-6 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border-2 border-orange-100 shadow-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-                      {getFileIcon(doc.type)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900 truncate max-w-48">{doc.name}</p>
-                      <p className="text-sm text-gray-600">{formatFileSize(doc.size)}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeDocument(index)}
-                    className="p-3 text-gray-400 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Upload Guidelines */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6">
-          <h4 className="font-bold text-blue-900 mb-4 text-lg">📋 Upload Guidelines:</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
-            <ul className="space-y-2">
-              <li>• Clear, readable documents only</li>
-              <li>• Maximum file size: 10MB per file</li>
-              <li>• Accepted formats: PDF, JPG, PNG, GIF</li>
-            </ul>
-            <ul className="space-y-2">
-              <li>• Ensure all text is visible</li>
-              <li>• No blurry or damaged documents</li>
-              <li>• Upload original documents only</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-between mt-10">
+      <div className="flex justify-between">
         <button
           onClick={onPrev}
-          className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold flex items-center gap-3 shadow-lg hover:shadow-xl"
+          className="px-6 py-3 border border-gray-400 rounded-lg hover:bg-gray-100"
         >
-          <ArrowLeft className="w-5 h-5" />
-          Previous
+          ← Back
         </button>
-        
+
         <button
           onClick={handleSubmit}
-          disabled={isSubmitting || documents.length === 0}
-          className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 font-semibold flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
+          disabled={isSubmitting || !documentFile || !webcamFile}
+          className="px-6 py-3 bg-green-500 text-white rounded-lg disabled:opacity-50 hover:bg-green-600"
         >
-          {isSubmitting ? (
-            <>
-              <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
-              Processing Registration...
-            </>
-          ) : (
-            <>
-              Complete Registration
-              <Check className="w-6 h-6" />
-            </>
-          )}
+          {isSubmitting ? 'Processing...' : '✅ Complete Registration'}
         </button>
       </div>
     </div>
