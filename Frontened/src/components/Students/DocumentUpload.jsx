@@ -58,8 +58,8 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     setIsSubmitting(true);
 
     const formData = new FormData();
-    formData.append('document', documentFile);
-    formData.append('live', webcamFile);
+    formData.append('document_image', documentFile);
+    formData.append('live_image', webcamFile);
 
     try {
       const response = await fetch('http://localhost:8000/api/identity/verify', {

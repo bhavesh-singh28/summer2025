@@ -1,4 +1,3 @@
-// src/components/WebcamSection.jsx
 import React, { useEffect, useRef } from 'react';
 
 const WebcamSection = ({ onCapture }) => {
@@ -37,10 +36,25 @@ const WebcamSection = ({ onCapture }) => {
   };
 
   return (
-    <div className="webcam-section">
-      <video ref={videoRef} autoPlay playsInline width="400" height="300" />
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-      <button onClick={captureImage} className="capture-btn">Capture</button>
+    <div className="flex justify-center items-center min-h-[400px] p-4">
+      <div className="rounded-2xl shadow-lg border border-gray-300 p-4 bg-white flex flex-col items-center space-y-4 w-full max-w-md">
+        <h2 className="text-xl font-semibold text-gray-700">Live Webcam</h2>
+        <div className="rounded-lg overflow-hidden border-2 border-gray-200">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            className="w-full h-auto object-cover max-h-[300px]"
+          />
+        </div>
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        <button
+          onClick={captureImage}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+        >
+           Capture
+        </button>
+      </div>
     </div>
   );
 };
