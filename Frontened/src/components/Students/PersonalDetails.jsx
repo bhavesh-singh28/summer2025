@@ -165,10 +165,22 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
     ];
 
     for (let field of requiredFields) {
-      if (!formData[field] || formData[field].trim() === "") {
-        toast.error(`Please fill out ${field} field.`);
+      if (!formData[field] || formData[field].toString().trim() === "") {
+        alert(`Please fill out ${field} field.`);
         return false;
       }
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      alert("Please enter a valid 10-digit phone number.");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      alert("Please enter a valid email address.");
+      return false;
     }
 
     return true;
