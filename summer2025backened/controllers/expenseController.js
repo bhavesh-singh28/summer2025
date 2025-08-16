@@ -56,6 +56,35 @@ export const createExpense = async (req, res) => {
   }
 };
 
+// ✅ Get Recent Expenses (for frontend table)
+export const getRecentExpenses = async (req, res) => {
+  try {
+    const transactions = await messexpenses.find().sort({ date: -1 }).limit(50);
+    const formatted = transactions.map(
+      ({ _id, studentid, email, amount, description, date }) => ({
+        _id,
+        studentid,
+        email,
+        amount,
+        description,
+        date,
+      })
+    );
+    res.status(200).json({
+      status: 1,
+      message: "Recent expenses fetched successfully",
+      data: formatted,
+    });
+  } catch (error) {
+    console.error("Error fetching recent expenses:", error);
+    res.status(500).json({
+      status: 0,
+      message: "Failed to fetch recent expenses",
+      error: error.message,
+    });
+  }
+};
+
 // ✅ Get All Transactions Based on Role
 export const getMessTransactionsByRole = async (req, res) => {
   try {
