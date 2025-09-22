@@ -1,6 +1,10 @@
 // src/api/axiosConfig.js
 import axios from "axios";
 
-export default axios.create({
-  baseURL:  "profound-annually-alien.ngrok-free.app", // fallback included
+const baseURL ="http://13.232.235.205:5000/api"; // fallback to localhost
+
+const api = axios.create({
+  baseURL,
 });
+
+export default api;

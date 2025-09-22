@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
    server: {
     proxy: {
-      '/api': 'profound-annually-alien.ngrok-free.app'
+      '/api': 'http://13.232.235.205:5000'
     }
   },
   plugins: [

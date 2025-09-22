@@ -150,7 +150,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
 
     try {
       const response = await axios.post(
-        `http://localhost:5000/api/personaldetail/upload-documents/${data.studentId}`,
+        `http://13.232.235.205:5000/api/personaldetail/upload-documents/${data.studentId}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

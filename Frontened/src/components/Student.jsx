@@ -24,7 +24,7 @@ const PersonalDetails = () => {
 
   const getAllpersonalDetails = () => {
     axios
-      .get("http://localhost:5000/api/personaldetail/view")
+      .get("http://13.232.235.205:5000/api/personaldetail/view")
       .then((res) => {
         if (res.data.status) {
           setPersonalDetails(res.data.personaldetailList);
@@ -42,7 +42,7 @@ const PersonalDetails = () => {
   const handleVerifyDocuments = async (studentId, status) => {
     try {
       await axios.patch(
-        `http://localhost:5000/api/personaldetail/verify-documents/${studentId}`,
+        `http://13.232.235.205:5000/api/personaldetail/verify-documents/${studentId}`,
         { status }
       );
       toast.success(`Documents ${status} successfully`);

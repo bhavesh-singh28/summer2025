@@ -101,7 +101,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
       let saveSuccessful = false;
       try {
         const existingStudent = await axios.get(
-          `http://localhost:5000/api/personaldetail/view`
+          `http://13.232.235.205:5000/api/personaldetail/view`
         );
         const studentExists = existingStudent.data.personaldetailList?.some(
           (student) =>
@@ -111,7 +111,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
         if (!studentExists) {
           await axios.post(
-            "http://localhost:5000/api/personaldetail/insert",
+            "http://13.232.235.205:5000/api/personaldetail/insert",
             
             updatedFormData // Send data with the new imageUrl
           );
@@ -126,7 +126,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
         // Fallback insert attempt
         try {
           await axios.post(
-            "http://localhost:5000/api/personaldetail/insert",
+            "http://13.232.235.205:5000/api/personaldetail/insert",
             updatedFormData
           );
           toast.success("Personal details saved successfully");
@@ -311,7 +311,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
   const getAllpersonalDetails = () => {
     axios
-      .get("http://localhost:5000/api/personaldetail/view")
+      .get("http://13.232.235.205:5000/api/personaldetail/view")
       .then((res) => {
         if (res.data.status) {
           setPersonalDetails(res.data.personaldetailList);
