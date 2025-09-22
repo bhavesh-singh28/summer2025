@@ -26,11 +26,9 @@ export const sendVerificationCode = async (req, res) => {
 
   try {
     const otp = generateOtp();
-    console.log(otp);
     await sendOtpVerificationEmail(email, otp);
     await Otp.create({ email, otp });
 
-    console.log(`OTP ${otp} sent to ${email}`);
     res.status(200).json({ message: "Verification code sent successfully" });
   } catch (err) {
     console.error("Error sending OTP:", err);
@@ -40,7 +38,6 @@ export const sendVerificationCode = async (req, res) => {
 
 export const verifySignupOtp = async (req, res) => {
   const { email, otp } = req.body;
-  console.log("OTP verification request received:", { email, otp });
   if (!email || !otp) return res.status(400).json({ error: "Email and OTP required" });
 
   try {
@@ -93,7 +90,6 @@ export const resendVerificationCode = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password, role } = req.body;
-  console.log("Login request received:", { email, role });
 
   if (!email || !password || !role) {
     return res.status(400).json({ error: "Email, password, and role are required" });
