@@ -148,27 +148,37 @@ export const getMessTransactionsByRole = async (req, res) => {
 // ✅ Get Expenses for a Specific Student
 export const getStudentExpenses = async (req, res) => {
   try {
-    const { studentid } = req.params;
-    if (!studentid) {
+    const paramId = req.params.studentid?.trim(); // _id from frontend (ObjectId)
+    if (!paramId) {
       return res.status(400).json({ message: "Student ID is required" });
     }
-    const transactions = await messexpenses.find({ studentid: studentid.toUpperCase() }).sort({ date: -1 });
-    const formatted = await Promise.all(transactions.map(async ({ _id, studentid, email, amount, description, date }) => {
-      const studentDetail = await personaldetailModel.findOne({ studentid });
-      return {
-        _id,
-        studentid,
-        email,
-        amount,
-        description,
-        date,
-        imageUrl: studentDetail ? studentDetail.imageUrl : '',
-      };
+
+    // Find the student in personal details collection
+    const studentObject = await personaldetailModel.findById(paramId);
+    console.log("Student Object:", studentObject);
+
+    if (!studentObject) {
+      return res.status(404).json({ message: "Student not found or unauthorized request" });
+    }
+
+    // Get the actual studentid field from personaldetail
+    const linkedStudentId = studentObject.studentid;
+
+    // Now find all mess expenses for that student
+    const expenses = await messexpenses.find({ studentid: linkedStudentId }).sort({ date: -1 });
+
+    const formattedExpenses = expenses.map(({ _id, studentid, amount, description, date }) => ({
+      _id,
+      studentid,
+      amount,
+      description,
+      date,
     }));
+
     res.status(200).json({
       status: 1,
       message: "Student expenses fetched successfully",
-      data: formatted,
+      data: formattedExpenses,
     });
   } catch (error) {
     console.error("Error fetching student expenses:", error);

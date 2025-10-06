@@ -29,7 +29,7 @@ const StudentVerificationManager = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        "http://localhost:5000/api/personaldetail/pending-verifications"
+        `${import.meta.env.VITE_BACKEND_URL}/personaldetail/pending-verifications`
       );
       if (response.data.status) {
         setPendingVerifications(response.data.pendingVerifications);
@@ -47,7 +47,7 @@ const StudentVerificationManager = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        "http://localhost:5000/api/personaldetail/all-verifications"
+        `${import.meta.env.VITE_BACKEND_URL}/personaldetail/all-verifications`
       );
       if (response.data.status) {
         setAllVerifications(response.data.verifications);
@@ -65,7 +65,7 @@ const StudentVerificationManager = () => {
     try {
       setLoading(true);
       const response = await axios.patch(
-        `http://localhost:5000/api/personaldetail/verify-documents/${studentId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/personaldetail/verify-documents/${studentId}`,
         { status }
       );
 
@@ -399,7 +399,7 @@ const StudentVerificationManager = () => {
                             </p>
                           </div>
                           <a
-                            href={`http://localhost:5000/${doc.path}`}
+                            href={`${import.meta.env.VITE_BACKEND_URL}/${doc.path}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800 flex items-center space-x-1"

@@ -150,7 +150,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
 
     try {
       const response = await axios.post(
-        `http://13.232.235.205:5000/api/personaldetail/upload-documents/${data.studentId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/personaldetail/upload-documents/${data.studentId}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
