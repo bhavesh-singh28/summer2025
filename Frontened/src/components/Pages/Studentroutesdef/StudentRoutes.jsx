@@ -7,6 +7,7 @@ import axios from "axios";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import StudentSettings from "../../Students/Settings/StudentSettings";
+import defaultpic from "../../../assets/ProfilePic.png";
 
 // ----- Student Menu -----
 const StudentMenu = () => {
@@ -132,6 +133,9 @@ const StudentMenu = () => {
   );
 };
 
+
+
+
 // ----- Student Expenses -----
 const StudentExpenses = () => {
   const [expenses, setExpenses] = useState([]);
@@ -144,16 +148,22 @@ const StudentExpenses = () => {
       try {
         const token = localStorage.getItem("token"); // or however you store it
 
-        const res = await axios.get("/api/personaldetail/view", {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/personaldetail/view`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        const loggedInStudentId = localStorage.getItem("studentid"); // or extract from decoded JWT
-        const match = res.data.personaldetailList.find(
-          (p) => p.studentid === loggedInStudentId
-        );
 
+        const loggedInStudent = localStorage.getItem("user"); // or extract from decoded JWT
+        const loggedInStudentId = loggedInStudent
+          ? JSON.parse(loggedInStudent).studentDetails._id
+          : null;
+        if (!loggedInStudentId) throw new Error("Student ID not found in localStorage");
+
+        const match = res.data.personaldetailList.find(
+          (p) => p._id === loggedInStudentId
+        );
+        console.log("Matched student details:", match);
         if (match) {
           setStudent(match);
         }
@@ -170,11 +180,9 @@ const StudentExpenses = () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication token not found.");
-      if (!student?.studentid) return; // Wait for studentid
-
-      const apiUrl = `/api/expense/transactions/${student.studentid}`;
-      console.log("API GET:", apiUrl);
-      const response = await axios.get(apiUrl, {
+      if (!student?._id) return; // Wait for studentid
+     
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/expense/transactions/${student._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("Student expenses API response:", response.data);
@@ -215,7 +223,6 @@ const StudentExpenses = () => {
         </div>
       </div>
     );
-
   const downloadPDF = () => {
     if (!student) {
       alert("Student info not loaded yet!");
@@ -326,7 +333,7 @@ const StudentNotifications = () => {
     const fetchNotices = async () => {
   try {
     const token = localStorage.getItem("token");
-    const response = await axios.get("/api/notices", {
+    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/notices`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -387,19 +394,12 @@ const StudentNotifications = () => {
 const StudentProfile = () => {
   const [student, setStudent] = useState(null);
   const [phone, setPhone] = useState("");
-  const [profilePic, setProfilePic] = useState("");
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user) {
       setStudent(user.studentDetails);
-      console.log(user.studentDetails);
     }
   }, []);
-
-  const handleUpdateProfile = () => {
-    alert("Profile updated successfully! (Mock mode)");
-  };
-
   if (!student) return <div>Loading profile...</div>;
 
   return (
@@ -408,7 +408,7 @@ const StudentProfile = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6 text-center">
           <img
-            src={profilePic}
+            src={student.imageUrl || defaultpic}
             alt="Profile"
             className="h-24 w-24 rounded-full mx-auto mb-4 object-cover bg-gray-100 p-2"
           />

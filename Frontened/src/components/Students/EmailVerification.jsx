@@ -41,7 +41,7 @@ const EmailVerification = ({ data, updateData, onNext }) => {
 
   setIsSending(true);
   try {
-    await axios.post('/api/auth/send-verification-code', { email });
+    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/send-verification-code`, { email });
     setIsEmailSent(true);
     setTimer(60);
     updateData({ email });
@@ -61,7 +61,7 @@ const EmailVerification = ({ data, updateData, onNext }) => {
 
     setIsVerifying(true);
     try {
-      await axios.post('/api/auth/verify-code', { email, otp });
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/verify-code`, { email, otp });
       setIsVerifying(false);
       updateData({ otp });
       onNext();
