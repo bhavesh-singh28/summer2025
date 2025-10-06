@@ -370,7 +370,7 @@ const PersonalDetails = () => {
                         {formatDocType(doc.type)}
                       </h4>
                       <a
-                        href={`http://localhost:5000/${doc.path}`}
+                        href={doc.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-50 transition"
@@ -379,6 +379,30 @@ const PersonalDetails = () => {
                         <Download className="w-5 h-5" />
                       </a>
                     </div>
+      {doc.mimetype === "application/pdf" ? (
+        
+        <iframe
+          src={doc.url}
+          title={doc.originalName}
+          className="w-full h-40 border rounded"
+onError={(e) => {
+  e.target.style.display = 'none';
+  const fallback = e.target.parentElement.querySelector('.pdf-fallback');
+  if (fallback) fallback.style.display = 'block';
+}}
+        />
+      ) : (
+        <img
+          src={doc.url}
+          alt={doc.originalName}
+          className="w-full h-40 object-cover rounded"
+        />
+      )}
+{doc.mimetype === "application/pdf" && (
+            <div className="pdf-fallback mt-2 hidden text-center text-gray-500">
+                <p>Cannot display PDF. <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Download to view</a></p>
+            </div>
+        )}
                     <p
                       className="text-sm text-gray-600 mb-1 truncate"
                       title={doc.originalName}
