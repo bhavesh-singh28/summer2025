@@ -19,6 +19,7 @@ const resetAllStats = async () => {
       }
     }
 
+    console.log("✅ Stats archived and reset (meals only)");
   } catch (error) {
     console.error("Error resetting stats:", error);
   }
