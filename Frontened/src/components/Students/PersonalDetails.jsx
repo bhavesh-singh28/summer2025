@@ -78,24 +78,56 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
     setIsSubmitting(true);
 
     try {
-      // ✅ STEP 1: Upload image to your backend which then sends it to Cloudinary
-      const uploadResponse = await axios.post(
-        "http://localhost:5000/api/personaldetail/upload-profile-image", // New backend endpoint
-        { image: imgSrc } // Send the base64 image data
-      );
+      // ❗ IMPORTANT: Replace with your Cloudinary details
+      const CLOUDINARY_CLOUD_NAME = "dopheg24o"; // 👈 REPLACE THIS
+      const CLOUDINARY_UPLOAD_PRESET = "user-image"; // 👈 REPLACE THIS
 
-      if (uploadResponse.data.status === 1) {
-        const imageUrl = uploadResponse.data.imageUrl;
-        toast.success("Image uploaded successfully!");
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
-        const updatedFormData = { ...formData, imageUrl };
-        setFormData(updatedFormData); // Update form data with the Cloudinary URL
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append("file", imgSrc);
+      cloudinaryFormData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-        // ✅ STEP 2: Continue with your original database submission logic
-        let saveSuccessful = false;
+      // Upload image to Cloudinary
+      const response = await axios.post(cloudinaryUrl, cloudinaryFormData);
+      const imageUrl = response.data.secure_url;
+
+      toast.success("Image uploaded successfully!");
+
+      const updatedFormData = { ...formData, imageUrl };
+      setFormData(updatedFormData);
+
+      // --- Continue with your original database submission logic ---
+      let saveSuccessful = false;
+      try {
+        const existingStudent = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/personaldetail/view`
+        );
+        const studentExists = existingStudent.data.personaldetailList?.some(
+          (student) =>
+            student.studentid === updatedFormData.studentid ||
+            student.email === updatedFormData.email
+        );
+
+        if (!studentExists) {
+          await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/personaldetail/insert`,
+            
+            updatedFormData // Send data with the new imageUrl
+          );
+          toast.success("Personal details saved successfully");
+          saveSuccessful = true;
+        } else {
+          toast.info("Student already exists, proceeding to next step");
+          saveSuccessful = true;
+        }
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        // Fallback insert attempt
         try {
-          const existingStudent = await axios.get(
-            `http://localhost:5000/api/personaldetail/view`
+          await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/personaldetail/insert`,
+            updatedFormData
           );
           const studentExists = existingStudent.data.personaldetailList?.some(
             (student) =>
@@ -226,7 +258,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
   // as the existence check is done on submission, but kept if other parts rely on it.
   const getAllpersonalDetails = () => {
     axios
-      .get("http://localhost:5000/api/personaldetail/view")
+      .get(`${import.meta.env.VITE_BACKEND_URL}/personaldetail/view`)
       .then((res) => {
         // This data isn't directly used by the component for display,
         // but might be useful for debugging or other logic if needed.

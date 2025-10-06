@@ -148,23 +148,28 @@ export const getMessTransactionsByRole = async (req, res) => {
 // ✅ Get Expenses for a Specific Student
 export const getStudentExpenses = async (req, res) => {
   try {
-    const { studentid } = req.params;
-    if (!studentid) {
+    const paramId = req.params.studentid?.trim(); // _id from frontend (ObjectId)
+    if (!paramId) {
       return res.status(400).json({ message: "Student ID is required" });
     }
     const transactions = await messexpenses.find({ studentid: studentid.toUpperCase() }).sort({ date: -1 });
-    const formatted = transactions.map(({ _id, studentid, email, amount, description, date }) => ({
-      _id,
-      studentid,
-      email,
-      amount,
-      description,
-      date,
+    const formatted = await Promise.all(transactions.map(async ({ _id, studentid, email, amount, description, date }) => {
+      const studentDetail = await personaldetailModel.findOne({ studentid });
+      return {
+        _id,
+        studentid,
+        email,
+        amount,
+        description,
+        date,
+        imageUrl: studentDetail ? studentDetail.imageUrl : '',
+      };
     }));
+
     res.status(200).json({
       status: 1,
       message: "Student expenses fetched successfully",
-      data: formatted,
+      data: formattedExpenses,
     });
   } catch (error) {
     console.error("Error fetching student expenses:", error);

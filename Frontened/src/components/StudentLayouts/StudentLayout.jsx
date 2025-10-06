@@ -54,7 +54,7 @@ export default function StudentLayout() {
   const { user, logout } = useAuth();
 
   // Use user data from auth context
-  const currentStudent = user || {
+  const currentStudent = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).studentDetails : {
     firstName: "John",
     lastName: "Doe",
     email: "john@example.com",
@@ -135,15 +135,15 @@ export default function StudentLayout() {
                 className="flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none"
               >
                 <img
-                  src={currentStudent.profilePic || "/src/assets/ProfilePic.png"}
+                  src={currentStudent.imageUrl || "/src/assets/ProfilePic.png"}
                   alt="Profile"
                   className="h-8 w-8 rounded-full object-cover bg-gray-100 p-1"
                 />
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium">
+                  <p className="text-sm font-medium text-gray-400">
                     {currentStudent.firstName} {currentStudent.lastName}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 ">
                     {currentStudent.email}
                   </p>
                 </div>
