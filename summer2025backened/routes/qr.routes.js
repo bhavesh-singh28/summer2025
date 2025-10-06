@@ -7,7 +7,7 @@ import crypto from "crypto";
 const router = express.Router();
 
 // POST /api/qr/scan
-router.post("/scan", async (req, res) => {
+router.post("/scan", verifyToken, async (req, res) => {
   try {
     const { qrToken } = req.body;
     if (!qrToken) {
