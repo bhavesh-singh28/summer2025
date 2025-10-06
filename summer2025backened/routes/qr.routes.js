@@ -2,6 +2,7 @@ import { verifyToken } from "../middleware/auth.js";
 import express from "express";
 import messexpenses from "../models/messtransaction.model.js";
 import User from "../models/user.model.js";
+import crypto from "crypto";
 
 const router = express.Router();
 
@@ -12,17 +13,12 @@ router.post("/scan", async (req, res) => {
     if (!qrToken) {
       return res.status(400).json({ error: "qrToken is required" });
     }
-
-    // Find user by qrToken and populate studentDetails
-    const user = await User.findOne({ qrToken, role: "student" })
-      .populate("studentDetails"); // only populate studentDetails
-
+    // Find user by qrToken
+    const user = await User.findOne({ qrToken, role: "student" }).populate("studentDetails");
     if (!user || !user.studentDetails) {
       return res.status(404).json({ error: "Student not found" });
     }
-
     const studentDetail = user.studentDetails;
-
     // Create expense
     const expense = new messexpenses({
       studentid: studentDetail.studentid,
@@ -30,29 +26,25 @@ router.post("/scan", async (req, res) => {
       amount: 45,
       description: "Mess Meal",
     });
-
     await expense.save();
-
     return res.status(201).json({
       message: "Expense recorded successfully",
       student: {
         name: `${studentDetail.firstname} ${studentDetail.lastname}`,
         email: studentDetail.email,
-         // safe access
       },
       expense: {
         studentid: expense.studentid,
         amount: expense.amount,
         description: expense.description,
         date: expense.date,
-        image: studentDetail?.imageUrl ,
       },
     });
-
   } catch (err) {
     return res.status(500).json({ error: "Server error", details: err.message });
   }
 });
+
 
 // POST /api/qr/refresh-token 
 router.post("/refresh-token", verifyToken, async (req, res) => {

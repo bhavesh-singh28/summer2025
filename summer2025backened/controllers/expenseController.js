@@ -7,6 +7,7 @@ import Stats from "../models/stats.model.js";
 export const createExpense = async (req, res) => {
   try {
     const { studentid, amount, description } = req.body;
+    console.log("Request body:", req.body);
 
     if (!studentid || !amount) {
       return res
@@ -16,6 +17,11 @@ export const createExpense = async (req, res) => {
 
     // Ensure description is not empty, provide default if needed
     const finalDescription = description?.trim() || "Mess Expense";
+    console.log("📝 Description handling:", {
+      original: description,
+      final: finalDescription,
+      isEmpty: !description || description.trim() === "",
+    });
 
     const studentDetail = await personaldetailModel.findOne({ studentid });
 
@@ -36,6 +42,7 @@ export const createExpense = async (req, res) => {
     });
 
     await expense.save();
+    console.log("✅ Expense saved successfully");
 
     res.status(201).json({
       message: "Expense recorded successfully",
@@ -46,7 +53,6 @@ export const createExpense = async (req, res) => {
         date: expense.date,
         studentName: `${studentDetail.firstname} ${studentDetail.lastname}`,
         email: expense.email,
-        imageUrl: studentDetail.imageUrl,
       },
       stats: {
         mealsToday: stat.mealsToday,
@@ -63,20 +69,16 @@ export const createExpense = async (req, res) => {
 export const getRecentExpenses = async (req, res) => {
   try {
     const transactions = await messexpenses.find().sort({ date: -1 }).limit(50);
-    const formatted = await Promise.all(transactions.map(
-      async ({ _id, studentid, email, amount, description, date }) => {
-        const studentDetail = await personaldetailModel.findOne({ studentid });
-        return {
-          _id,
-          studentid,
-          email,
-          amount,
-          description,
-          date,
-          imageUrl: studentDetail ? studentDetail.imageUrl : '',
-        };
-      }
-    ));
+    const formatted = transactions.map(
+      ({ _id, studentid, email, amount, description, date }) => ({
+        _id,
+        studentid,
+        email,
+        amount,
+        description,
+        date,
+      })
+    );
     res.status(200).json({
       status: 1,
       message: "Recent expenses fetched successfully",
@@ -115,20 +117,18 @@ export const getMessTransactionsByRole = async (req, res) => {
       });
     }
 
-    const formatted = await Promise.all(transactions.map(
-      async ({ _id, studentid, email, amount, description, date }) => {
-        const studentDetail = await personaldetailModel.findOne({ studentid });
-        return {
-          _id,
-          studentid,
-          email,
-          amount,
-          description,
-          date,
-          imageUrl: studentDetail ? studentDetail.imageUrl : '',
-        };
-      }
-    ));
+    const formatted = transactions.map(
+      ({ _id, studentid, email, amount, description, date }) => ({
+        _id,
+        studentid,
+        email,
+        amount,
+        description,
+        date,
+      })
+    );
+
+    console.log("Formatted transactions:", formatted);
 
     res.status(200).json({
       status: 1,
@@ -153,17 +153,13 @@ export const getStudentExpenses = async (req, res) => {
       return res.status(400).json({ message: "Student ID is required" });
     }
     const transactions = await messexpenses.find({ studentid: studentid.toUpperCase() }).sort({ date: -1 });
-    const formatted = await Promise.all(transactions.map(async ({ _id, studentid, email, amount, description, date }) => {
-      const studentDetail = await personaldetailModel.findOne({ studentid });
-      return {
-        _id,
-        studentid,
-        email,
-        amount,
-        description,
-        date,
-        imageUrl: studentDetail ? studentDetail.imageUrl : '',
-      };
+    const formatted = transactions.map(({ _id, studentid, email, amount, description, date }) => ({
+      _id,
+      studentid,
+      email,
+      amount,
+      description,
+      date,
     }));
     res.status(200).json({
       status: 1,
