@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "../api/axiosConfig";
+import axios from "axios";
 
 const Login = ({ role }) => {
   const [formData, setFormData] = useState({ email: "", password: "", role });
@@ -14,7 +14,7 @@ const Login = ({ role }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("/api/auth/login", formData);
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, formData);
       if (res.data.success) {
         alert(res.data.message);
         if (res.data.user.role === "student") {
