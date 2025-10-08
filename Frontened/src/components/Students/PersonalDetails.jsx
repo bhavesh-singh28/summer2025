@@ -226,7 +226,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
   // as the existence check is done on submission, but kept if other parts rely on it.
   const getAllpersonalDetails = () => {
     axios
-      .get("http://localhost:5000/api/personaldetail/view")
+      .get(`${import.meta.env.VITE_BACKEND_URL}/personaldetail/view`)
       .then((res) => {
         // This data isn't directly used by the component for display,
         // but might be useful for debugging or other logic if needed.

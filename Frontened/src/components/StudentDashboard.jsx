@@ -8,7 +8,13 @@ const StudentDashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [qrToken, setQrToken] = useState("");
   const [qrLoading, setQrLoading] = useState(true);
-    // Fetch QR token for logged-in user
+  const [notifications, setNotifications] = useState([]);
+  const [mealsThisMonth, setMealsThisMonth] = useState(0);
+  const [avgDailyExpense, setAvgDailyExpense] = useState(0);
+  const navigate = useNavigate();
+
+  // ✅ Fetch QR token once on mount
+  useEffect(() => {
     const fetchQrToken = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -18,17 +24,16 @@ const StudentDashboard = () => {
         });
         setQrToken(res.data.qrToken || "");
       } catch (err) {
+        console.error("Failed to fetch QR token:", err);
         setQrToken("");
       } finally {
         setQrLoading(false);
       }
     };
     fetchQrToken();
-  const [notifications, setNotifications] = useState([]);
-  const [mealsThisMonth, setMealsThisMonth] = useState(0);
-  const [avgDailyExpense, setAvgDailyExpense] = useState(0);
-  const navigate = useNavigate();
+  }, []); // ← run once
 
+  // ✅ Fetch student data, notices, and expenses
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
@@ -51,9 +56,7 @@ const StudentDashboard = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get("/notices", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const sortedNotices = response.data.sort(
           (a, b) =>
@@ -78,9 +81,7 @@ const StudentDashboard = () => {
         if (!token) throw new Error("Authentication token not found.");
 
         const response = await axios.get("/mess-staff/transactions", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const expenses = Array.isArray(response.data)
@@ -106,24 +107,21 @@ const StudentDashboard = () => {
           0
         );
 
-        const average =
+        setAvgDailyExpense(
           thisMonthExpenses.length > 0
             ? Math.round(totalAmount / thisMonthExpenses.length)
-            : 0;
-
-        setAvgDailyExpense(average);
+            : 0
+        );
       } catch (err) {
         console.error("Failed to fetch expense stats:", err);
       }
     };
 
-    // 🟢 Call all async functions
+    // Call all once
     fetchStudentData();
     fetchNotifications();
     fetchExpenseStats();
-  }, []);
-
-  if (!currentUser) return <div>Loading...</div>;
+  }, []); // ← single useEffect for all
 
   // Refresh QR code handler
   const handleRefreshQr = async () => {
@@ -138,6 +136,8 @@ const StudentDashboard = () => {
     }
   };
 
+  if (!currentUser) return <div>Loading...</div>;
+
   const qrSection = (
     <div style={{ margin: "2rem 0" }}>
       {qrLoading ? (
@@ -148,7 +148,15 @@ const StudentDashboard = () => {
           <QRCode value={qrToken} size={200} />
           <button
             onClick={handleRefreshQr}
-            style={{ marginTop: "1rem", padding: "0.5rem 1rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}
+            style={{
+              marginTop: "1rem",
+              padding: "0.5rem 1rem",
+              background: "#2563eb",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
           >
             Refresh QR Code
           </button>
@@ -177,14 +185,17 @@ const StudentDashboard = () => {
   return (
     <div className="space-y-6">
       {qrSection}
-      {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {quickStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {stat.label}
+                </p>
+                <p className={`text-2xl font-bold ${stat.color}`}>
+                  {stat.value}
+                </p>
               </div>
               <stat.icon className={`h-8 w-8 ${stat.color}`} />
             </div>
@@ -192,7 +203,6 @@ const StudentDashboard = () => {
         ))}
       </div>
 
-      {/* Notices Section */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
@@ -212,7 +222,9 @@ const StudentDashboard = () => {
                     className="p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400"
                   >
                     <p className="text-sm text-gray-800">{notification.text}</p>
-                    <p className="text-xs text-gray-500 mt-1">{notification.date}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {notification.date}
+                    </p>
                   </div>
                 ))
               )}
