@@ -76,9 +76,19 @@ const EmailVerification = ({ data, updateData, onNext }) => {
   };
 
   return (
-    <div ref={sectionRef} className="max-w-lg mx-auto">
-      <div className="text-center mb-10">
-        {/* 👇 Modern small round icon */}
+ <div
+    ref={sectionRef}
+    className="
+      w-full 
+      max-w-[90%] sm:max-w-lg md:max-w-xl lg:max-w-2xl 
+      mx-auto 
+      px-4 sm:px-6 md:px-10 
+      py-8 sm:py-10 
+      flex flex-col 
+      justify-center
+    "
+  >    
+<div className="text-center mb-6 sm:mb-8 md:mb-10">        {/* 👇 Modern small round icon */}
         {/* <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
           <Mail className="w-5 h-5 text-orange-600" />
         </div>
@@ -103,12 +113,12 @@ const EmailVerification = ({ data, updateData, onNext }) => {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-5 py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all duration-300 text-lg ${
-                  errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-orange-300'
+                className={`w-full px-4 sm:px-5 py-3 sm:py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all duration-300 text-base sm:text-lg md:text-xl ${
+    errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-orange-300'
                 }`}
                 placeholder="student@university.edu"
               />
-              <UtensilsCrossed className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <UtensilsCrossed className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
             {errors.email && (
               <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
@@ -121,16 +131,30 @@ const EmailVerification = ({ data, updateData, onNext }) => {
           <button
   onClick={sendVerificationCode}
   disabled={isSending}
-  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-4 px-6 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 font-semibold text-lg flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
->
+className="
+    w-full 
+    bg-gradient-to-r from-orange-500 to-amber-500 
+    text-white 
+    py-3 sm:py-4 md:py-5 
+    px-4 sm:px-6 
+    rounded-xl 
+    hover:from-orange-600 hover:to-amber-600 
+    transition-all duration-300 
+    font-semibold 
+    text-base sm:text-lg md:text-xl 
+    flex items-center justify-center gap-3 
+    shadow-md hover:shadow-lg 
+    transform hover:scale-105 
+    disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none
+  ">
   {isSending ? (
     <>
-      <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
       Sending...
     </>
   ) : (
     <>
-      <Send className="w-6 h-6" />
+                <Send className="w-5 h-5 sm:w-6 sm:h-6" />
       Send Verification Code
     </>
   )}
@@ -166,7 +190,7 @@ const EmailVerification = ({ data, updateData, onNext }) => {
               onChange={(e) =>
                 setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
               }
-              className={`w-full px-5 py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all duration-300 text-center text-2xl font-mono tracking-widest ${
+              className={`w-full px-4 sm:px-5 py-3 sm:py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all duration-300 text-center text-xl sm:text-2xl font-mono tracking-widest ${
                 errors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-orange-300'
               }`}
               placeholder="● ● ● ● ● ●"
@@ -183,30 +207,30 @@ const EmailVerification = ({ data, updateData, onNext }) => {
           <button
             onClick={verifyCode}
             disabled={isVerifying}
-            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-4 px-6 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 font-semibold text-lg flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
+            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 font-semibold text-base sm:text-lg flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105 disabled:transform-none"
           >
             {isVerifying ? (
               <>
-                <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
                 Verifying...
               </>
             ) : (
               <>
                 Verify & Continue
-                <ArrowRight className="w-6 h-6" />
+                <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
               </>
             )}
           </button>
 
           <div className="text-center">
             {timer > 0 ? (
-              <p className="text-sm text-gray-600 bg-gray-50 rounded-lg py-2 px-4">
+              <p className="text-sm sm:text-base text-gray-600 bg-gray-50 rounded-lg py-2 px-4">
                 🕐 Resend code in <span className="font-semibold text-orange-600">{timer}</span> seconds
               </p>
             ) : (
               <button
                 onClick={resendCode}
-                className="text-sm text-orange-600 hover:text-orange-700 transition-colors font-semibold bg-orange-50 hover:bg-orange-100 rounded-lg py-2 px-4"
+                className="text-sm sm:text-base text-orange-600 hover:text-orange-700 transition-colors font-semibold bg-orange-50 hover:bg-orange-100 rounded-lg py-2 px-4"
               >
                 📧 Didn't receive the code? Resend now
               </button>
