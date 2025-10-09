@@ -11,3 +11,16 @@ html {
   -ms-overflow-style: none;  /* IE/Edge */
   scrollbar-width: none;     /* Firefox */
 }
+
+/* Toast positioned at top-right and on the very top layer */
+.toast-top-most {
+  z-index: 999 !important; /* highest safe 32-bit int */
+  position: fixed !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  pointer-events: none; /* allow clicks to pass through except on the toast itself */
+}
+
+.toast-top-most .Toastify__toast {
+  pointer-events: auto !important;
+}

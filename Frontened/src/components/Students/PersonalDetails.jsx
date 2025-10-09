@@ -1,7 +1,8 @@
 // ⬇️ NEW: Import necessary hooks, Webcam component, and new icons
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import ReactDOM from 'react-dom';
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Webcam from "react-webcam"; // NEW: Import Webcam
 import {
@@ -243,6 +244,22 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Portal the ToastContainer to document.body so it's outside the form DOM */}
+      {typeof document !== 'undefined' && ReactDOM.createPortal(
+        <ToastContainer
+          position="top-right"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          className="toast-top-most"
+        />,
+        document.body
+      )}
         {/* --- IMPROVED CAMERA MODAL --- */}
         {showCamera && (
             <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
