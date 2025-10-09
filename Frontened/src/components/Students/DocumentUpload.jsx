@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
 import {
   Upload,
   FileText, // Keeping FileText just in case, but it won't be used for accepted types
@@ -44,6 +43,9 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
   const [dragActive, setDragActive] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState("");
+  const [generalSuccess, setGeneralSuccess] = useState("");
 
   // MODIFIED: Only allow image types
   const acceptedFileTypes = [
@@ -107,13 +109,15 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
   };
 
   const handleFile = (file, docType) => {
-    // Only allow image types
+    // reset errors for this docType
+    setErrors((e) => ({ ...e, [docType]: null }));
+
     if (!acceptedFileTypes.includes(file.type)) {
-      toast.error(`File "${file.name}" is not a valid image type. Only PNG and JPG are supported.`);
+      setErrors((e) => ({ ...e, [docType]: `File "${file.name}" is not a valid image type. Only PNG and JPG are supported.` }));
       return;
     }
     if (file.size > maxFileSize) {
-      toast.error(`File is too large. Maximum size is 10MB`);
+      setErrors((e) => ({ ...e, [docType]: `File is too large. Maximum size is 10MB` }));
       return;
     }
 
@@ -143,8 +147,10 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     Object.keys(uploadedFiles).length === requiredDocuments.length;
 
   const handleSubmit = async () => {
+    setGeneralError("");
+    setGeneralSuccess("");
     if (!allDocumentsUploaded) {
-      toast.error("Please upload all required documents to continue.");
+      setGeneralError("Please upload all required documents to continue.");
       return;
     }
 
@@ -166,7 +172,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      toast.success("Documents uploaded successfully!");
+  setGeneralSuccess("Documents uploaded successfully!");
       
       const documentsWithUrls = {};
       response.data.documents.forEach((uploadedDoc) => {
@@ -191,7 +197,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
       setTimeout(() => setIsComplete(true), 500);
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload documents. Please try again.");
+      setGeneralError("Failed to upload documents. Please try again.");
       setIsSubmitting(false);
     }
   };
@@ -237,6 +243,8 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-10">
+        {generalError && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">{generalError}</div>}
+        {generalSuccess && <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">{generalSuccess}</div>}
         <div className="w-24 h-24 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
           <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center">
             <Upload className="w-8 h-8 text-white" />
@@ -276,7 +284,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
               <h3 className="font-bold text-gray-900">{doc.title}</h3>
               <p className="text-sm text-gray-600 mb-4">{doc.description}</p>
 
-              {file ? (
+                {file ? (
                 <div className="flex items-center justify-between p-2 bg-white border rounded-lg shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="flex-shrink-0 text-gray-500">
@@ -310,6 +318,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
                   />
                 </label>
               )}
+              {errors[doc.title] && <p className="text-red-600 text-sm mt-2">{errors[doc.title]}</p>}
             </div>
           );
         })}

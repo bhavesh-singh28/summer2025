@@ -71,7 +71,7 @@ const StudentExpenses = () => {
 
       console.log("API POST:", "/api/expense/add-expense");
       const response = await axios.post(
-        "/api/expense/add-expense",
+        `${import.meta.env.VITE_BACKEND_URL}/expense/add-expense`,
         {
           studentid: expenseData.studentid.toUpperCase(),
           amount: parseFloat(expenseData.amount),
@@ -112,7 +112,7 @@ const StudentExpenses = () => {
       try {
         const token = localStorage.getItem("token");
   console.log("API GET:", "/api/expense/transactions");
-  const response = await axios.get("/api/expense/transactions", {
+  const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/expense/transactions`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
