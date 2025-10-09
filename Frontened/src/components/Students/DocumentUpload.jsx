@@ -3,7 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import {
   Upload,
-  FileText,
+  FileText, // Keeping FileText just in case, but it won't be used for accepted types
   Image,
   X,
   Check,
@@ -11,21 +11,42 @@ import {
   UtensilsCrossed,
   GraduationCap,
   CreditCard,
-  CheckCircle, // Added for a better UI experience
+  CheckCircle,
 } from "lucide-react";
 
 const DocumentUpload = ({ data, updateData, onPrev }) => {
-  // NEW: State holds an object of files, keyed by their title, e.g., { "Student ID Card": File }
-  const [uploadedFiles, setUploadedFiles] = useState(data.documents || {});
+  const [uploadedFiles, setUploadedFiles] = useState(() => {
+    if (data.documents && Array.isArray(data.documents)) {
+      return data.documents.reduce((acc, doc) => {
+        const requiredDoc = requiredDocuments.find(rd => rd.key === doc.type);
+        if (requiredDoc) {
+          // Ensure that pre-loaded documents also adhere to the new type restriction
+          // This assumes the backend also enforces it, but for frontend consistency:
+          if (doc.mimetype === "image/png" || doc.mimetype === "image/jpeg") {
+            acc[requiredDoc.title] = {
+              name: doc.originalName,
+              type: doc.type,
+              mimetype: doc.mimetype, // Store mimetype for icon logic
+              size: 0,
+              url: doc.url
+            };
+          } else {
+             // Optionally, log a warning or filter out non-image documents
+             console.warn(`Pre-loaded document "${doc.originalName}" is not an allowed image type and will be ignored.`);
+          }
+        }
+        return acc;
+      }, {});
+    }
+    return {};
+  });
 
-  // NEW: State tracks which specific box is being dragged over
   const [dragActive, setDragActive] = useState(null);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
+  // MODIFIED: Only allow image types
   const acceptedFileTypes = [
-    "application/pdf",
     "image/jpeg",
     "image/jpg",
     "image/png",
@@ -36,7 +57,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     {
       key: "studentIdCard",
       title: "Student ID Card",
-      description: "Clear photo of your student identification card",
+      description: "Clear photo of your student identification card (PNG or JPG)",
       icon: GraduationCap,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
@@ -44,23 +65,21 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     {
       key: "hostelAllotmentLetter",
       title: "Hostel Allotment Letter",
-      description: "Official hostel room allotment document",
-      icon: FileText,
+      description: "Official hostel room allotment document (PNG or JPG)",
+      icon: FileText, // Keeping FileText icon, but content will be image
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
-      // Added the missing 'key' for consistency
       key: "feePaymentReceipt",
       title: "Fee Payment Receipt",
-      description: "Proof of mess/canteen fee payment",
+      description: "Proof of mess/canteen fee payment (PNG or JPG)",
       icon: CreditCard,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
   ];
 
-  // MODIFIED: Handlers now accept a 'docType' to know which box is being used
   const handleDrag = (e, docType) => {
     e.preventDefault();
     e.stopPropagation();
@@ -87,10 +106,10 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     }
   };
 
-  // MODIFIED: Handles a single file for a specific document type
   const handleFile = (file, docType) => {
+    // Only allow image types
     if (!acceptedFileTypes.includes(file.type)) {
-      toast.error(`File type ${file.type} is not supported`);
+      toast.error(`File "${file.name}" is not a valid image type. Only PNG and JPG are supported.`);
       return;
     }
     if (file.size > maxFileSize) {
@@ -98,26 +117,20 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
       return;
     }
 
-    // Updates the state object with the new file
     const newFiles = { ...uploadedFiles, [docType]: file };
     setUploadedFiles(newFiles);
-    updateData({ documents: newFiles });
   };
 
-  // MODIFIED: Removes a file from the state object by its title
   const removeDocument = (docType) => {
     const newFiles = { ...uploadedFiles };
     delete newFiles[docType];
     setUploadedFiles(newFiles);
-    updateData({ documents: newFiles });
   };
 
-  const getFileIcon = (type) =>
-    type === "application/pdf" ? (
-      <FileText className="w-8 h-8 text-red-500" />
-    ) : (
-      <Image className="w-8 h-8 text-orange-500" />
-    );
+  // MODIFIED: getFileIcon will now always return an Image icon
+  const getFileIcon = () => (
+    <Image className="w-8 h-8 text-orange-500" />
+  );
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return "0 Bytes";
@@ -126,7 +139,6 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
   };
 
-  // NEW: A check to see if all required documents have been uploaded
   const allDocumentsUploaded =
     Object.keys(uploadedFiles).length === requiredDocuments.length;
 
@@ -139,12 +151,11 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     setIsSubmitting(true);
     const formData = new FormData();
 
-    // Append files and their specific types to FormData
     requiredDocuments.forEach((doc) => {
       const file = uploadedFiles[doc.title];
       if (file) {
         formData.append("documents", file);
-        formData.append("documentTypes", doc.key); // Send a consistent key to the backend
+        formData.append("documentTypes[]", doc.key);
       }
     });
 
@@ -156,17 +167,32 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
       );
 
       toast.success("Documents uploaded successfully!");
+      
+      const documentsWithUrls = {};
+      response.data.documents.forEach((uploadedDoc) => {
+        const originalDoc = requiredDocuments.find(rd => rd.key === uploadedDoc.type);
+        if (originalDoc) {
+          documentsWithUrls[originalDoc.title] = {
+            name: uploadedDoc.originalName,
+            type: uploadedDoc.type,
+            mimetype: uploadedDoc.mimetype, // Make sure to store mimetype
+            size: 0,
+            url: uploadedDoc.url
+          };
+        }
+      });
+
+      setUploadedFiles(documentsWithUrls);
       updateData({
         documents: response.data.documents,
         verificationStatus: "pending",
       });
 
-      // Delay setting isComplete to allow the toast notification to render first
       setTimeout(() => setIsComplete(true), 500);
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload documents. Please try again.");
-      setIsSubmitting(false); // Allow the user to try again on failure
+      setIsSubmitting(false);
     }
   };
 
@@ -224,11 +250,10 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
         </p>
       </div>
 
-      {/* REPLACEMENT: Individual upload boxes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {requiredDocuments.map((doc) => {
           const file = uploadedFiles[doc.title];
-          const Icon = doc.icon;
+          const Icon = doc.icon; // This icon will still render based on `requiredDocuments` definition
 
           return (
             <div
@@ -252,11 +277,10 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
               <p className="text-sm text-gray-600 mb-4">{doc.description}</p>
 
               {file ? (
-                // If file is uploaded, show its details
                 <div className="flex items-center justify-between p-2 bg-white border rounded-lg shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="flex-shrink-0 text-gray-500">
-                      {getFileIcon(file.type).props.children}
+                      {getFileIcon().props.children} {/* Always show image icon now */}
                     </div>
                     <div>
                       <p className="font-semibold text-gray-700 text-xs truncate max-w-28">
@@ -275,14 +299,14 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
                   </button>
                 </div>
               ) : (
-                // If no file, show the "Upload File" button
                 <label className="text-orange-600 font-bold underline cursor-pointer hover:text-orange-700">
                   Upload File
                   <input
                     type="file"
                     onChange={(e) => handleChange(e, doc.title)}
                     className="hidden"
-                    accept={acceptedFileTypes.join(",")}
+                    // MODIFIED: Only accept image file extensions
+                    accept=".png, .jpg, .jpeg"
                   />
                 </label>
               )}
@@ -290,8 +314,6 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
           );
         })}
       </div>
-
-      {/* The large, single dropzone and the separate file list have been removed */}
 
       <div className="flex justify-between mt-12">
         <button
@@ -304,7 +326,6 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
 
         <button
           onClick={handleSubmit}
-          // The button is disabled until all required documents are present
           disabled={isSubmitting || !allDocumentsUploaded}
           className="px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >

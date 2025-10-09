@@ -3,6 +3,25 @@ import User from "../models/user.model.js";
 import { sendLoginCredentials } from "../middleware/nodemailer.js";
 import { generateReadablePassword } from "../utils/passwordGenerator.js";
 import bcrypt from "bcrypt";
+import cloudinary from "cloudinary";
+import DatauriParser from "datauri/parser.js"; // Import DatauriParser
+
+cloudinary.v2.config({ // Use v2 for consistency
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Initialize DatauriParser
+const parser = new DatauriParser(); // Already declared above
+
+const formatBufferToDataUri = (mimetype, buffer) => {
+  const ext = mimetype.split("/")[1] || "";
+  return parser.format(`.${ext}`, buffer).content;
+};
+// Helper to convert buffer to data URI
+// const formatBufferToDataUri = (mimetype, buffer) =>
+//   parser.format(`.${mimetype.split("/")[1]}`, buffer);
 
 // Insert a new personal detail
 export const personaldetailInsert = async (req, res) => {
@@ -20,9 +39,9 @@ export const personaldetailInsert = async (req, res) => {
       studentid,
       hostelblock,
       roomno,
-      imageUrl
+      imageUrl,
     } = req.body;
-console.log("Data received on server:", imageUrl);
+    console.log("Data received on server:", imageUrl);
     // Check if student already exists
     const existingStudent = await personaldetailModel.findOne({
       $or: [{ studentid }, { email }],
@@ -47,9 +66,9 @@ console.log("Data received on server:", imageUrl);
       studentid,
       hostelblock,
       roomno,
-     imageUrl
+      imageUrl,
     });
-     
+
     await newDetail.save();
 
     res.status(201).send({
@@ -91,48 +110,116 @@ export const personaldetailList = async (req, res) => {
 };
 
 // Upload documents for a student
+// (cloudinary and DatauriParser already imported and initialized above)
+
+// helper that returns the data URI string directly
+
+
 export const uploadDocuments = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { documentTypes } = req.body;
+    let documentTypes = req.body.documentTypes; // may be string/array/undefined
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "No files uploaded" });
+    // --- Normalize documentTypes ---
+    if (!documentTypes) {
+      documentTypes = [];
+    } else if (typeof documentTypes === "string") {
+      // Could be JSON string like '["a","b"]' or comma-separated "a,b"
+      try {
+        const parsed = JSON.parse(documentTypes);
+        documentTypes = Array.isArray(parsed) ? parsed : [parsed];
+      } catch (e) {
+        // fallback to comma-split
+        documentTypes = documentTypes.split(",").map((s) => s.trim());
+      }
     }
 
-    // Find the student's personal details
+    console.log("uploadDocuments: req.body:", req.body);
+    console.log("uploadDocuments: normalized documentTypes:", documentTypes);
+
+    // --- Validate files ---
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ status: 0, message: "No files uploaded" });
+    }
+    console.log(`uploadDocuments: ${req.files.length} files received`);
+
+    // --- Find student ---
     const student = await personaldetailModel.findOne({ studentid: studentId });
     if (!student) {
-      return res.status(404).json({ message: "Student not found" });
+      return res.status(404).json({ status: 0, message: "Student not found" });
+    }
+    console.log("student found:", studentId);
+    console.log("found student:", student);
+    const uploadedCloudinaryDocuments = [];
+
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+      const docType = documentTypes[i] || `document-${i + 1}`;
+
+      // ensure buffer exists (requires multer.memoryStorage())
+      if (!file.buffer) {
+        console.warn("uploadDocuments: missing file.buffer for", file.originalname);
+        return res.status(400).json({
+          status: 0,
+          message:
+            "File buffer missing. Make sure multer is configured with memoryStorage()",
+        });
+      }
+
+      const dataUri = formatBufferToDataUri(file.mimetype, file.buffer);
+
+      const resourceType = file.mimetype === "application/pdf" ? "raw" : "image";
+
+      // give each file a reasonably-unique public id to avoid collisions
+      const publicId =
+        file.originalname.split(".").slice(0, -1).join(".") + "-" + Date.now();
+
+      let result;
+      try {
+        result = await cloudinary.uploader.upload(dataUri, {
+          folder: `student_documents/${studentId}`,
+          resource_type: resourceType,
+          public_id: publicId,
+          // don't force format unless you need to
+        });
+      } catch (uploadErr) {
+        console.error("Cloudinary upload failed for", file.originalname, uploadErr);
+        return res.status(500).json({
+          status: 0,
+          message: "Cloudinary upload failed",
+          error: uploadErr.message,
+        });
+      }
+
+      uploadedCloudinaryDocuments.push({
+        type: docType,
+        originalName: file.originalname,
+        url: result.secure_url,
+        mimetype: file.mimetype,
+        uploadDate: new Date(),
+      });
+
+      console.log("Uploaded to Cloudinary:", result.secure_url);
     }
 
-    // Process uploaded files
-    const documents = req.files.map((file, index) => ({
-      type: Array.isArray(documentTypes)
-        ? documentTypes[index]
-        : `document-${index + 1}`,
-      filename: file.filename,
-      originalName: file.originalname,
-      path: file.path,
-      uploadDate: new Date(),
-    }));
-
-    // Add documents to student record
-    student.documents.push(...documents);
+    // ensure documents array exists
+    student.documents = Array.isArray(student.documents) ? student.documents : [];
+    student.documents = student.documents.concat(uploadedCloudinaryDocuments);
     student.verificationStatus = "pending";
+
     await student.save();
 
     res.status(200).json({
+      status: 1,
       message: "Documents uploaded successfully",
-      documents: documents,
+      documents: uploadedCloudinaryDocuments,
     });
   } catch (error) {
     console.error("Upload error:", error);
-    res.status(500).json({ message: "Server error during upload" });
+    res.status(500).json({ status: 0, message: "Server error during upload", error: error.message });
   }
 };
 
-// Verify documents for a student
 // Verify documents for a student
 export const verifyDocuments = async (req, res) => {
   try {
@@ -159,13 +246,13 @@ export const verifyDocuments = async (req, res) => {
           const generatedPassword = generateReadablePassword(10);
           const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
-          // ✅ Create user account and link personal details
+          // Create user account and link personal details
           const newUser = new User({
             email: student.email,
             password: hashedPassword,
             role: "student",
             isVerified: true,
-            studentDetails: student._id, // ✅ Linking the personaldetail reference
+            studentDetails: student._id, // Linking the personaldetail reference
           });
 
           await newUser.save();
@@ -199,7 +286,6 @@ export const verifyDocuments = async (req, res) => {
     res.status(500).json({ message: "Server error during verification" });
   }
 };
-
 
 // Get pending verifications for admin
 export const getPendingVerifications = async (req, res) => {
@@ -240,6 +326,35 @@ export const getAllVerifications = async (req, res) => {
     res.status(500).json({
       status: 0,
       message: "Server error fetching verifications",
+    });
+  }
+};
+
+export const uploadProfileImage = async (req, res) => {
+  try {
+    const { image } = req.body; // 'image' will be the base64 string from the frontend
+
+    if (!image) {
+      return res.status(400).json({ status: 0, message: "No image data provided" });
+    }
+
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(image, {
+      upload_preset: "user-image", // Your Cloudinary upload preset
+      folder: "student_profiles", // Optional: organize uploads in a specific folder
+    });
+
+    res.status(200).json({
+      status: 1,
+      message: "Image uploaded successfully to Cloudinary",
+      imageUrl: result.secure_url,
+    });
+  } catch (error) {
+    console.error("Error uploading image to Cloudinary:", error);
+    res.status(500).json({
+      status: 0,
+      message: "Error uploading image to Cloudinary",
+      error: error.message,
     });
   }
 };
