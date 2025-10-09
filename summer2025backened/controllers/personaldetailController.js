@@ -358,3 +358,19 @@ export const uploadProfileImage = async (req, res) => {
     });
   }
 };
+
+// Check if a student exists by studentid (secure, single-record check)
+export const personaldetailExists = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    if (!studentId) {
+      return res.status(400).json({ status: 0, message: "studentId param required" });
+    }
+
+    const student = await personaldetailModel.findOne({ studentid: studentId });
+    return res.status(200).json({ status: 1, exists: !!student });
+  } catch (error) {
+    console.error("Error checking student existence:", error);
+    return res.status(500).json({ status: 0, message: "Server error", error: error.message });
+  }
+};

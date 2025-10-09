@@ -2,6 +2,7 @@ import express from "express";
 import {
   personaldetailInsert,
   personaldetailList,
+  personaldetailExists,
   uploadDocuments,
   verifyDocuments,
   getPendingVerifications,
@@ -15,6 +16,8 @@ const router = express.Router();
 // POST request to insert personal detail
 router.post("/insert", personaldetailInsert);
 router.get("/view", personaldetailList);
+// Check if student exists (by studentid) - returns { exists: true/false }
+router.get("/exists/:studentId", personaldetailExists);
 
 router.post("/upload-profile-image", uploadProfileImage);
 

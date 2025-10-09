@@ -64,7 +64,27 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
       return;
     }
 
-    // If form is valid, show the camera modal to capture the image
+    // NEW: Ask backend whether this studentid exists (single-record check)
+    try {
+      const studentId = String(formData.studentid || "").trim();
+      if (!studentId) {
+        setErrors((prev) => ({ ...prev, studentid: "Student ID is required." }));
+        return;
+      }
+
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/personaldetail/exists/${encodeURIComponent(studentId)}`);
+      if (res.data && res.data.exists) {
+        setErrors((prev) => ({ ...prev, studentid: "This Student ID already exists." }));
+        setGeneralError("A student with this roll number already exists. If this is you, please contact admin.");
+        return;
+      }
+    } catch (err) {
+      console.error("Error checking student ID uniqueness:", err);
+      setGeneralError("Could not verify Student ID uniqueness due to a network error. Please try again.");
+      return;
+    }
+
+    // If form is valid and studentid is unique, show the camera modal to capture the image
     setShowCamera(true);
   };
 
