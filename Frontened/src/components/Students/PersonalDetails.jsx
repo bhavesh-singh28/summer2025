@@ -179,47 +179,82 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
 
   const validateForm = () => {
-    setErrors({});
-    setGeneralError("");
-    setGeneralSuccess("");
+  setErrors({});
+  setGeneralError("");
+  setGeneralSuccess("");
 
-    const requiredFields = [
-      "firstname", "lastname", "phone", "email", "DOB",
-      "address", "city", "state", "zipcode", "studentid",
-      "hostelblock", "roomno",
-    ];
-    const newErrors = {};
+  const requiredFields = [
+    "firstname", "lastname", "phone", "email", "DOB",
+    "address", "city", "state", "zipcode", "studentid",
+    "hostelblock", "roomno",
+  ];
+  const newErrors = {};
 
-    for (let field of requiredFields) {
-      if (!formData[field] || formData[field].toString().trim() === "") {
-        newErrors[field] = `${field.replace(/([A-Z])/g, ' $1').toLowerCase()} is required.`;
-      }
+  // Empty field check
+  for (let field of requiredFields) {
+    if (!formData[field] || formData[field].toString().trim() === "") {
+      newErrors[field] = `${field.replace(/([A-Z])/g, ' $1').toLowerCase()} is required.`;
     }
+  }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address.";
+  // Name validation (no numbers)
+  const nameRegex = /^[A-Za-z\s]+$/;
+  if (formData.firstname && !nameRegex.test(formData.firstname)) {
+    newErrors.firstname = "First name should only contain letters.";
+  }
+  if (formData.lastname && !nameRegex.test(formData.lastname)) {
+    newErrors.lastname = "Last name should only contain letters.";
+  }
+
+  // City and state validation (no numbers)
+  if (formData.city && !nameRegex.test(formData.city)) {
+    newErrors.city = "City name should only contain letters.";
+  }
+  if (formData.state && !nameRegex.test(formData.state)) {
+    newErrors.state = "State name should only contain letters.";
+  }
+
+  // Zipcode validation (6 digits)
+  const zipRegex = /^\d{6}$/;
+  if (formData.zipcode && !zipRegex.test(formData.zipcode)) {
+    newErrors.zipcode = "Zipcode must be exactly 6 digits.";
+  }
+
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (formData.email && !emailRegex.test(formData.email)) {
+    newErrors.email = "Please enter a valid email address.";
+  }
+
+  // Phone number validation (10 digits)
+  const phoneRegex = /^\d{10}$/;
+  if (formData.phone && !phoneRegex.test(formData.phone)) {
+    newErrors.phone = "Please enter a valid 10-digit phone number.";
+  }
+
+  // DOB validation (not in the future)
+  if (formData.DOB) {
+    const dobDate = new Date(formData.DOB);
+    const today = new Date();
+    const minDOB = new Date("1950-01-01");
+
+    if (dobDate > today) {
+      newErrors.DOB = "Date of Birth cannot be in the future.";
+    } else if (dobDate < minDOB) {
+      newErrors.DOB = "Date of Birth cannot be before 1950.";
     }
+  }
 
-    // Basic phone number validation (e.g., 10 digits)
-    const phoneRegex = /^\d{10}$/;
-    if (formData.phone && !phoneRegex.test(formData.phone)) {
-      newErrors.phone = "Please enter a valid 10-digit phone number.";
-    }
+  // Student ID validation (only digits)
+  const studentIdRegex = /^\d+$/;
+  if (formData.studentid && !studentIdRegex.test(formData.studentid)) {
+    newErrors.studentid = "Student ID should contain only digits.";
+  }
 
-    // Basic DOB validation (not in the future)
-    if (formData.DOB) {
-      const dobDate = new Date(formData.DOB);
-      const today = new Date();
-      if (dobDate > today) {
-        newErrors.DOB = "Date of Birth cannot be in the future.";
-      }
-    }
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const getValue = (e) => {
     const { name, value } = e.target;
@@ -396,7 +431,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label htmlFor="studentId" className="block text-sm font-semibold text-gray-700 mb-2">Student ID *</label>
+              <label htmlFor="studentId" className="block text-sm font-semibold text-gray-700 mb-2">Student ID (Hostel Roll No) *</label>
               <input value={formData.studentid} onChange={getValue} type="text" id="studentid" name="studentid" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${errors.studentid ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'focus:ring-4 focus:ring-purple-200 focus:border-purple-500 border-gray-200 hover:border-purple-300'}`} placeholder="STU123456"/>
               {errors.studentid && <p className="text-red-600 text-sm mt-1">{errors.studentid}</p>}
             </div>
