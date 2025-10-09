@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
 import {
   Eye,
   Download,
@@ -10,7 +9,8 @@ import {
   User,
   X as CloseIcon,
 } from "lucide-react";
-import "react-toastify/dist/ReactToastify.css";
+// toast removed - using inline banners
+
 
 const PersonalDetails = () => {
   const [personalDetails, setPersonalDetails] = useState([]);
@@ -21,6 +21,8 @@ const PersonalDetails = () => {
   // NEW: State for the image viewer modal
   const [showImageModal, setShowImageModal] = useState(false);
   const [largeImageUrl, setLargeImageUrl] = useState("");
+  const [generalError, setGeneralError] = useState("");
+  const [generalSuccess, setGeneralSuccess] = useState("");
 
   const getAllpersonalDetails = () => {
     axios
@@ -45,11 +47,11 @@ const PersonalDetails = () => {
         `${import.meta.env.VITE_BACKEND_URL}/personaldetail/verify-documents/${studentId}`,
         { status }
       );
-      toast.success(`Documents ${status} successfully`);
+      setGeneralSuccess(`Documents ${status} successfully`);
       getAllpersonalDetails(); // Refresh data to show updated status
     } catch (error) {
       console.error("Verification error:", error);
-      toast.error("Failed to update verification status");
+      setGeneralError("Failed to update verification status");
     }
   };
 
@@ -91,6 +93,8 @@ const PersonalDetails = () => {
 
   return (
     <div className="w-auto mx-auto no-scrollbar">
+      {generalError && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">{generalError}</div>}
+      {generalSuccess && <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">{generalSuccess}</div>}
       <div className="space-y-6 p-4 md:p-6 lg:p-8">
         <h1 className="text-3xl font-bold text-gray-800">
           🎓 Student Management

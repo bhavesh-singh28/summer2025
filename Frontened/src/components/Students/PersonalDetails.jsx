@@ -1,9 +1,6 @@
 // ⬇️ NEW: Import necessary hooks, Webcam component, and new icons
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import ReactDOM from 'react-dom';
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import Webcam from "react-webcam"; // NEW: Import Webcam
 import {
   User,
@@ -22,6 +19,9 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false); // To prevent multiple submissions
+  const [errors, setErrors] = useState({}); // field-level errors
+  const [generalError, setGeneralError] = useState("");
+  const [generalSuccess, setGeneralSuccess] = useState("");
 
   // ⬇️ NEW: State for camera modal and image handling
   const [showCamera, setShowCamera] = useState(false);
@@ -72,7 +72,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
   //              and then the rest of the form submission.
   const uploadImageAndContinue = async () => {
     if (!imgSrc) {
-      toast.error("Please capture an image before continuing.");
+      setErrors((e) => ({ ...e, image: "Please capture an image before continuing." }));
       return;
     }
 
@@ -87,7 +87,7 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
       if (uploadResponse.data.status === 1) {
         const imageUrl = uploadResponse.data.imageUrl;
-        toast.success("Image uploaded successfully!");
+        setGeneralSuccess("Image uploaded successfully!");
 
         const updatedFormData = { ...formData, imageUrl };
         setFormData(updatedFormData); // Update form data with the Cloudinary URL
@@ -109,10 +109,10 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
               "http://localhost:5000/api/personaldetail/insert",
               updatedFormData // Send data with the new imageUrl
             );
-            toast.success("Personal details saved successfully");
+            setGeneralSuccess("Personal details saved successfully");
             saveSuccessful = true;
           } else {
-            toast.info("Student already exists, proceeding to next step");
+            setGeneralSuccess("Student already exists, proceeding to next step");
             saveSuccessful = true;
           }
         } catch (dbError) {
@@ -123,14 +123,14 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
               "http://localhost:5000/api/personaldetail/insert",
               updatedFormData
             );
-            toast.success("Personal details saved successfully");
+            setGeneralSuccess("Personal details saved successfully");
             saveSuccessful = true;
           } catch (insertError) {
             if (insertError.response?.status === 400) {
-              toast.info("Student already exists, proceeding to next step");
+              setGeneralSuccess("Student already exists, proceeding to next step");
               saveSuccessful = true;
             } else {
-              toast.error("Failed to save personal details");
+              setGeneralError("Failed to save personal details");
               setIsSubmitting(false);
               return;
             }
@@ -163,13 +163,13 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
           onNext();
         }, 100);
 
-      } else {
-        toast.error(uploadResponse.data.message || "Failed to upload image.");
-      }
+        } else {
+          setGeneralError(uploadResponse.data.message || "Failed to upload image.");
+        }
 
     } catch (error) {
       console.error("Error uploading image or saving data:", error);
-      toast.error("Failed to upload image or save data.");
+      setGeneralError("Failed to upload image or save data.");
     } finally {
       setIsSubmitting(false);
       setShowCamera(false); // Close the modal
@@ -179,43 +179,46 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
 
   const validateForm = () => {
+    setErrors({});
+    setGeneralError("");
+    setGeneralSuccess("");
+
     const requiredFields = [
       "firstname", "lastname", "phone", "email", "DOB",
       "address", "city", "state", "zipcode", "studentid",
       "hostelblock", "roomno",
     ];
+    const newErrors = {};
 
     for (let field of requiredFields) {
-      if (!formData[field] || formData[field].trim() === "") {
-        toast.error(`Please fill out the ${field.replace(/([A-Z])/g, ' $1').toLowerCase()} field.`); // Improved error message
-        return false;
+      if (!formData[field] || formData[field].toString().trim() === "") {
+        newErrors[field] = `${field.replace(/([A-Z])/g, ' $1').toLowerCase()} is required.`;
       }
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-        toast.error("Please enter a valid email address.");
-        return false;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address.";
     }
 
     // Basic phone number validation (e.g., 10 digits)
     const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(formData.phone)) {
-        toast.error("Please enter a valid 10-digit phone number.");
-        return false;
+    if (formData.phone && !phoneRegex.test(formData.phone)) {
+      newErrors.phone = "Please enter a valid 10-digit phone number.";
     }
 
     // Basic DOB validation (not in the future)
-    const dobDate = new Date(formData.DOB);
-    const today = new Date();
-    if (dobDate > today) {
-        toast.error("Date of Birth cannot be in the future.");
-        return false;
+    if (formData.DOB) {
+      const dobDate = new Date(formData.DOB);
+      const today = new Date();
+      if (dobDate > today) {
+        newErrors.DOB = "Date of Birth cannot be in the future.";
+      }
     }
 
-
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const getValue = (e) => {
@@ -244,21 +247,16 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Portal the ToastContainer to document.body so it's outside the form DOM */}
-      {typeof document !== 'undefined' && ReactDOM.createPortal(
-        <ToastContainer
-          position="top-right"
-          autoClose={4000}
-          hideProgressBar={false}
-          newestOnTop={true}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          className="toast-top-most"
-        />,
-        document.body
+      {/* General banners for success/error */}
+      {generalError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
+          {generalError}
+        </div>
+      )}
+      {generalSuccess && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
+          {generalSuccess}
+        </div>
       )}
         {/* --- IMPROVED CAMERA MODAL --- */}
         {showCamera && (
@@ -330,23 +328,34 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="firstname" className="block text-sm font-semibold text-gray-700 mb-2">First Name *</label>
-              <input value={formData.firstname} onChange={getValue} type="text" id="firstname" name="firstname" className="w-full px-4 py-3 border-2 rounded-xl border-gray-200 focus:ring-orange-200 focus:border-orange-500" placeholder="John" />
+              <input value={formData.firstname} onChange={getValue} type="text" id="firstname" name="firstname" className={`w-full px-4 py-3 border-2 rounded-xl ${errors.firstname ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-orange-200 focus:border-orange-500'}`} placeholder="John" />
+              {errors.firstname && <p className="text-red-600 text-sm mt-1">{errors.firstname}</p>}
             </div>
             <div>
               <label htmlFor="lastname" className="block text-sm font-semibold text-gray-700 mb-2">Last Name *</label>
-              <input value={formData.lastname} onChange={getValue} type="text" id="lastname" name="lastname" className="w-full px-4 py-3 border-2 rounded-xl border-gray-200 focus:ring-orange-200 focus:border-orange-500" placeholder="Doe" />
+              <input value={formData.lastname} onChange={getValue} type="text" id="lastname" name="lastname" className={`w-full px-4 py-3 border-2 rounded-xl ${errors.lastname ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-orange-200 focus:border-orange-500'}`} placeholder="Doe" />
+              {errors.lastname && <p className="text-red-600 text-sm mt-1">{errors.lastname}</p>}
             </div>
             <div>
               <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">Phone *</label>
-              <div className="relative"><input value={formData.phone} onChange={getValue} type="tel" id="phone" name="phone" className="w-full px-4 py-3 pl-12 border-2 rounded-xl border-gray-200 focus:ring-orange-200 focus:border-orange-500" placeholder="1234567890" /><Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" /></div>
+              <div className="relative">
+                <input value={formData.phone} onChange={getValue} type="tel" id="phone" name="phone" className={`w-full px-4 py-3 pl-12 border-2 rounded-xl ${errors.phone ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-orange-200 focus:border-orange-500'}`} placeholder="1234567890" />
+                <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
+              {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
             </div>
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
-              <input value={formData.email} onChange={getValue} type="email" id="email" name="email" className="w-full px-4 py-3 border-2 rounded-xl border-gray-200 focus:ring-orange-200 focus:border-orange-500" placeholder="student@university.edu" />
+              <input value={formData.email} onChange={getValue} type="email" id="email" name="email" className={`w-full px-4 py-3 border-2 rounded-xl ${errors.email ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-orange-200 focus:border-orange-500'}`} placeholder="student@university.edu" />
+              {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
             </div>
             <div>
               <label htmlFor="DOB" className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth *</label>
-              <div className="relative"><input value={formData.DOB} onChange={getValue} type="date" id="DOB" name="DOB" className="w-full px-4 py-3 pl-12 border-2 rounded-xl border-gray-200 focus:ring-orange-200 focus:border-orange-500" /><Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" /></div>
+              <div className="relative">
+                <input value={formData.DOB} onChange={getValue} type="date" id="DOB" name="DOB" className={`w-full px-4 py-3 pl-12 border-2 rounded-xl ${errors.DOB ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-orange-200 focus:border-orange-500'}`} />
+                <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
+              {errors.DOB && <p className="text-red-600 text-sm mt-1">{errors.DOB}</p>}
             </div>
           </div>
         </div>
@@ -359,19 +368,23 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-2">Address *</label>
-              <input value={formData.address} onChange={getValue} type="text" id="address" name="address" className="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 border-gray-200 hover:border-blue-300" placeholder="123 Main Street"/>
+              <input value={formData.address} onChange={getValue} type="text" id="address" name="address" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${errors.address ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'focus:ring-4 focus:ring-blue-200 focus:border-blue-500 border-gray-200 hover:border-blue-300'}`} placeholder="123 Main Street"/>
+              {errors.address && <p className="text-red-600 text-sm mt-1">{errors.address}</p>}
             </div>
             <div>
               <label htmlFor="city" className="block text-sm font-semibold text-gray-700 mb-2">City *</label>
-              <input value={formData.city} onChange={getValue} type="text" id="city" name="city" className="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 border-gray-200 hover:border-blue-300" placeholder="New York"/>
+              <input value={formData.city} onChange={getValue} type="text" id="city" name="city" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${errors.city ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'focus:ring-4 focus:ring-blue-200 focus:border-blue-500 border-gray-200 hover:border-blue-300'}`} placeholder="New York"/>
+              {errors.city && <p className="text-red-600 text-sm mt-1">{errors.city}</p>}
             </div>
             <div>
               <label htmlFor="state" className="block text-sm font-semibold text-gray-700 mb-2">State *</label>
-              <input value={formData.state} onChange={getValue} type="text" id="state" name="state" className="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 border-gray-200 hover:border-blue-300" placeholder="NY"/>
+              <input value={formData.state} onChange={getValue} type="text" id="state" name="state" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${errors.state ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'focus:ring-4 focus:ring-blue-200 focus:border-blue-500 border-gray-200 hover:border-blue-300'}`} placeholder="NY"/>
+              {errors.state && <p className="text-red-600 text-sm mt-1">{errors.state}</p>}
             </div>
             <div>
               <label htmlFor="zipCode" className="block text-sm font-semibold text-gray-700 mb-2">ZIP Code *</label>
-              <input value={formData.zipcode} onChange={getValue} type="text" id="zipcode" name="zipcode" className="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 border-gray-200 hover:border-blue-300" placeholder="10001"/>
+              <input value={formData.zipcode} onChange={getValue} type="text" id="zipcode" name="zipcode" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${errors.zipcode ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'focus:ring-4 focus:ring-blue-200 focus:border-blue-500 border-gray-200 hover:border-blue-300'}`} placeholder="10001"/>
+              {errors.zipcode && <p className="text-red-600 text-sm mt-1">{errors.zipcode}</p>}
             </div>
           </div>
         </div>
@@ -384,15 +397,18 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label htmlFor="studentId" className="block text-sm font-semibold text-gray-700 mb-2">Student ID *</label>
-              <input value={formData.studentid} onChange={getValue} type="text" id="studentid" name="studentid" className="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all duration-300 border-gray-200 hover:border-purple-300" placeholder="STU123456"/>
+              <input value={formData.studentid} onChange={getValue} type="text" id="studentid" name="studentid" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${errors.studentid ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'focus:ring-4 focus:ring-purple-200 focus:border-purple-500 border-gray-200 hover:border-purple-300'}`} placeholder="STU123456"/>
+              {errors.studentid && <p className="text-red-600 text-sm mt-1">{errors.studentid}</p>}
             </div>
             <div>
               <label htmlFor="hostelBlock" className="block text-sm font-semibold text-gray-700 mb-2">Hostel Block *</label>
-              <input value={formData.hostelblock} onChange={getValue} type="text" id="hostelblock" name="hostelblock" className="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all duration-300 border-gray-200 hover:border-purple-300" placeholder="block-4"/>
+              <input value={formData.hostelblock} onChange={getValue} type="text" id="hostelblock" name="hostelblock" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${errors.hostelblock ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'focus:ring-4 focus:ring-purple-200 focus:border-purple-500 border-gray-200 hover:border-purple-300'}`} placeholder="block-4"/>
+              {errors.hostelblock && <p className="text-red-600 text-sm mt-1">{errors.hostelblock}</p>}
             </div>
             <div>
               <label htmlFor="roomNumber" className="block text-sm font-semibold text-gray-700 mb-2">Room Number *</label>
-              <input value={formData.roomno} onChange={getValue} type="text" id="roomno" name="roomno" className="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all duration-300 border-gray-200 hover:border-purple-300" placeholder="101"/>
+              <input value={formData.roomno} onChange={getValue} type="text" id="roomno" name="roomno" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${errors.roomno ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'focus:ring-4 focus:ring-purple-200 focus:border-purple-500 border-gray-200 hover:border-purple-300'}`} placeholder="101"/>
+              {errors.roomno && <p className="text-red-600 text-sm mt-1">{errors.roomno}</p>}
             </div>
           </div>
         </div>

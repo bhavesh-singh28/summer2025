@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
 import {
   User,
   Mail,
@@ -23,6 +22,8 @@ const StudentVerificationManager = () => {
   const [loading, setLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [generalError, setGeneralError] = useState("");
+  const [generalSuccess, setGeneralSuccess] = useState("");
 
   // Fetch pending verifications
   const fetchPendingVerifications = async () => {
@@ -36,7 +37,7 @@ const StudentVerificationManager = () => {
       }
     } catch (error) {
       console.error("Error fetching pending verifications:", error);
-      toast.error("Failed to fetch pending verifications");
+      setGeneralError("Failed to fetch pending verifications");
     } finally {
       setLoading(false);
     }
@@ -54,7 +55,7 @@ const StudentVerificationManager = () => {
       }
     } catch (error) {
       console.error("Error fetching all verifications:", error);
-      toast.error("Failed to fetch verifications");
+      setGeneralError("Failed to fetch verifications");
     } finally {
       setLoading(false);
     }
@@ -71,10 +72,10 @@ const StudentVerificationManager = () => {
 
       if (response.status === 200) {
         const action = status === "approved" ? "approved" : "rejected";
-        toast.success(`Student verification ${action} successfully!`);
+        setGeneralSuccess(`Student verification ${action} successfully!`);
 
         if (status === "approved" && response.data.emailSent) {
-          toast.success("Login credentials sent to student's email!");
+          setGeneralSuccess((s) => s + " Login credentials sent to student's email!");
         }
 
         // Refresh data
@@ -84,7 +85,7 @@ const StudentVerificationManager = () => {
       }
     } catch (error) {
       console.error("Error during verification:", error);
-      toast.error("Failed to update verification status");
+      setGeneralError("Failed to update verification status");
     } finally {
       setLoading(false);
     }
@@ -211,6 +212,8 @@ const StudentVerificationManager = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {generalError && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">{generalError}</div>}
+      {generalSuccess && <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">{generalSuccess}</div>}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Student Verification Manager
