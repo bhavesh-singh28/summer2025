@@ -21,7 +21,7 @@ const VerificationStatsWidget = () => {
   const fetchStats = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/personaldetail/all-verifications"
+        `${import.meta.env.VITE_BACKEND_URL}/personaldetail/all-verifications`
       );
 
       if (response.data.status) {
