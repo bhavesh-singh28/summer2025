@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
   Download,
@@ -18,6 +18,34 @@ const StudentTransactions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all"); // all, mess, canteen
   const [dateFilter, setDateFilter] = useState("all"); // all, today, week, month
+  const [showPdfOptions, setShowPdfOptions] = useState(false);
+
+  // helper: last 12 months
+  const getLastMonths = (count = 12) => {
+    const months = [];
+    const now = new Date();
+    for (let i = 0; i < count; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString(undefined, { month: "long", year: "numeric" });
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      months.push({ label, value });
+    }
+    return months;
+  };
+
+  const months = getLastMonths(12);
+  const pdfRef = useRef(null);
+
+  // close month dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (showPdfOptions && pdfRef.current && !pdfRef.current.contains(e.target)) {
+        setShowPdfOptions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showPdfOptions]);
 
   useEffect(() => {
     fetchTransactions();
@@ -262,6 +290,48 @@ const downloadPDF = () => {
   doc.save(`monthly_student_totals_${new Date().toISOString().split("T")[0]}.pdf`);
 };
 
+const downloadPDFForMonth = (monthValue) => {
+  // Filter transactions by monthValue (YYYY-MM)
+  const filtered = transactions.filter((t) => {
+    const d = new Date(t.date);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return ym === monthValue;
+  });
+
+  if (!filtered.length) {
+    alert('No transactions found for the selected month.');
+    setShowPdfOptions(false);
+    return;
+  }
+
+  // Aggregate totals per student
+  const totals = filtered.reduce((acc, cur) => {
+    const id = (cur.studentid || 'UNKNOWN').toString().toUpperCase();
+    const amt = parseFloat(cur.amount) || 0;
+    acc[id] = (acc[id] || 0) + amt;
+    return acc;
+  }, {});
+
+  const rows = Object.keys(totals).map((id) => [id, `Rs. ${totals[id].toFixed(2)}`]);
+
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text('Monthly Student Totals', 14, 20);
+  doc.setFontSize(10);
+  doc.text(`Month: ${monthValue}`, 14, 26);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 32);
+
+  autoTable(doc, {
+    head: [['Student ID', 'Total Amount']],
+    body: rows,
+    startY: 38,
+    theme: 'grid',
+  });
+
+  doc.save(`student_totals_${monthValue}.pdf`);
+  setShowPdfOptions(false);
+};
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
@@ -311,13 +381,32 @@ const downloadPDF = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={downloadPDF}
-          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export PDF</span>
-        </button>
+        <div className="relative" ref={pdfRef}>
+          <button
+            onClick={() => setShowPdfOptions((s) => !s)}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export PDF</span>
+          </button>
+
+          {showPdfOptions && (
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="p-2 text-sm font-medium text-gray-700">Select Month</div>
+              <ul className="max-h-56 overflow-y-auto">
+                {months.map((m) => (
+                  <li
+                    key={m.value}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                    onClick={() => downloadPDFForMonth(m.value)}
+                  >
+                    {m.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
