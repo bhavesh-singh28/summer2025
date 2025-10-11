@@ -17,6 +17,8 @@ const PersonalDetails = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showDocuments, setShowDocuments] = useState(false);
   const [showCompleteDetails, setShowCompleteDetails] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
 
   // NEW: State for the image viewer modal
   const [showImageModal, setShowImageModal] = useState(false);
@@ -60,6 +62,18 @@ const PersonalDetails = () => {
     setLargeImageUrl(imageUrl);
     setShowImageModal(true);
   };
+  const filteredDetails = personalDetails.filter((detail) => {
+  const fullName = `${detail.firstname} ${detail.lastname}`.toLowerCase();
+  const room = detail.roomno?.toString() || "";
+  const phone = detail.phone?.toString() || "";
+
+  return (
+    fullName.includes(searchQuery.toLowerCase()) ||
+    room.includes(searchQuery) ||
+    phone.includes(searchQuery)
+  );
+});
+
 
   const viewDocuments = (student) => {
     setSelectedStudent(student);
@@ -92,7 +106,7 @@ const PersonalDetails = () => {
   };
 
   return (
-    <div className="w-auto mx-auto no-scrollbar">
+    <div className="w-full mx-auto no-scrollbar">
       {generalError && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">{generalError}</div>}
       {generalSuccess && <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">{generalSuccess}</div>}
       <div className="space-y-6 p-4 md:p-6 lg:p-8">
@@ -104,14 +118,16 @@ const PersonalDetails = () => {
           <div className="relative w-full max-w-sm">
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e)=>{setSearchQuery(e.target.value)}}
               placeholder="Search by name or email..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
 
-        <div className="max-h-[500px] overflow-y-auto rounded-lg shadow bg-white">
-          <table className="w-full table-auto border-collapse">
+        <div className="max-w-screen sm:max-h-[500px] sm:w-full overflow-x-auto rounded-lg shadow bg-white">
+          <table className="max-w-screen table-auto border-collapse">
             <thead>
               <tr className="bg-gray-100 text-left text-sm uppercase text-gray-600">
                 <th className="px-4 py-4 whitespace-nowrap">Image</th>
@@ -128,7 +144,7 @@ const PersonalDetails = () => {
               </tr>
             </thead>
             <tbody>
-              {personalDetails.map((detail, index) => (
+              {filteredDetails.map((detail, index) => (
                 <tr
                   key={index}
                   className="border-b hover:bg-gray-50 transition-all duration-200"
