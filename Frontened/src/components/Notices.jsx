@@ -314,7 +314,7 @@ const NoticeBoard = () => {
               <div>
                 <p className="font-semibold text-orange-800">Address</p>
                 <p className="text-orange-700 text-sm">
-                  123 Anywhere St., Any City, ST 12345
+                  Warden Office, BH1
                 </p>
               </div>
             </div>
@@ -337,7 +337,7 @@ const NoticeBoard = () => {
               </div>
               <div>
                 <p className="font-semibold text-orange-800">Phone</p>
-                <p className="text-orange-700 text-sm">123-456-7890</p>
+                <p className="text-orange-700 text-sm">8077863526</p>
               </div>
             </div>
 
@@ -360,7 +360,7 @@ const NoticeBoard = () => {
               <div>
                 <p className="font-semibold text-orange-800">Email</p>
                 <p className="text-orange-700 text-sm">
-                  hello@reallygreatsite.com
+                  pu.boyshostel1@gmail.com
                 </p>
               </div>
             </div>
