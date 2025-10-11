@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import StudentLayout from "../../StudentLayouts/StudentLayout";
 import StudentDashboard from "../../../components/StudentDashboard";
 import { getWeeklyMenu } from "../../../api/menuApi";
@@ -142,6 +142,32 @@ const StudentExpenses = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [student, setStudent] = useState(null); // to hold student base details
+  const [showExportMonths, setShowExportMonths] = useState(false);
+  const exportRef = useRef(null);
+
+  const getLastMonths = (count = 12) => {
+    const months = [];
+    const now = new Date();
+    for (let i = 0; i < count; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString(undefined, { month: "long", year: "numeric" });
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      months.push({ label, value });
+    }
+    return months;
+  };
+
+  const exportMonths = getLastMonths(12);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (showExportMonths && exportRef.current && !exportRef.current.contains(e.target)) {
+        setShowExportMonths(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showExportMonths]);
 
   useEffect(() => {
     const fetchStudentDetails = async () => {
@@ -262,6 +288,47 @@ const StudentExpenses = () => {
     doc.save("expenses_report.pdf");
   };
 
+  const downloadStudentTotalsForMonth = (monthValue) => {
+    if (!student) {
+      alert('Student info not loaded yet!');
+      return;
+    }
+
+    // Filter student's expenses for that month
+    const filtered = expenses.filter((e) => {
+      const d = new Date(e.date);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return ym === monthValue;
+    });
+
+    if (!filtered.length) {
+      alert('No expenses for selected month.');
+      setShowExportMonths(false);
+      return;
+    }
+
+    // Aggregate totals per category (not needed per-student since this is single student)
+    const total = filtered.reduce((s, it) => s + (parseFloat(it.amount) || 0), 0);
+
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Monthly Expense Summary', 14, 20);
+    doc.setFontSize(11);
+    doc.text(`Student: ${student.firstname} ${student.lastname} (${student.studentid})`, 14, 28);
+    doc.text(`Month: ${monthValue}`, 14, 36);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 44);
+
+    autoTable(doc, {
+      startY: 52,
+      head: [['Description', 'Date', 'Amount']],
+      body: filtered.map((e) => [e.description, new Date(e.date).toLocaleDateString(), `Rs. ${e.amount}`]),
+    });
+
+    doc.text(`Total Expense: Rs. ${total.toFixed(2)}`, 14, doc.lastAutoTable.finalY + 10);
+    doc.save(`student_monthly_expense_${monthValue}.pdf`);
+    setShowExportMonths(false);
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">💸 My Expenses</h1>
@@ -269,12 +336,27 @@ const StudentExpenses = () => {
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Recent Expenses</h2>
-            <button
-              onClick={downloadPDF}
-              className="bg-blue-600 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg text-sm"
-            >
-              Download Report
-            </button>
+            <div className="relative" ref={exportRef}>
+              <button
+                onClick={() => setShowExportMonths((s) => !s)}
+                className="bg-blue-600 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg text-sm"
+              >
+                Download Report
+              </button>
+
+              {showExportMonths && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <div className="p-2 text-sm font-medium text-gray-700">Select Month</div>
+                  <ul className="max-h-56 overflow-y-auto">
+                    {exportMonths.map((m) => (
+                      <li key={m.value} className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onClick={() => downloadStudentTotalsForMonth(m.value)}>
+                        {m.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
           <div className="space-y-3">
             {expenses.length === 0 ? (
