@@ -1,16 +1,16 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import LandingPage from "./Components/Pages/LandingPage/LandingPage";
-import NotFound from "./Components/NotFound";
+import LandingPage from "./components/Pages/Landingpage/Landingpage";
+import NotFound from "./components/NotFound";
 import AdminRoutes from "./components/Pages/Adminroutesdef/Adminroutes";
-import StudentRoutes from "./Components/Pages/Studentroutesdef/StudentRoutes";
-import LoginHub from "./Components/LoginHub";
-import AdminLogin from "./Components/AdminLogin";
+import StudentRoutes from "./components/Pages/Studentroutesdef/StudentRoutes";
+import LoginHub from "./components/LoginHub";
+import AdminLogin from "./components/AdminLogin";
 import AdminLoginForm from "./components/AdminLoginForm";
 import LoginPage from "./LoginPage";
 import SignupFlow from "./Components/Students/SignupFlow";
-import StudentLogin from "./Components/Students/StudentLogin";
-import StudentSignup from "./Components/Students/StudentSignup";
+import StudentLogin from "./components/Students/StudentLogin";
+import StudentSignup from "./components/Students/StudentSignup";
 import MessAdminRoutes from "./components/Pages/Admin/MessAdminRoutes";
 
 
