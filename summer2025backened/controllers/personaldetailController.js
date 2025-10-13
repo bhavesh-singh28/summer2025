@@ -41,7 +41,7 @@ export const personaldetailInsert = async (req, res) => {
       roomno,
       imageUrl,
     } = req.body;
-    console.log("Data received on server:", imageUrl);
+  
     // Check if student already exists
     const existingStudent = await personaldetailModel.findOne({
       $or: [{ studentid }, { email }],
@@ -134,23 +134,20 @@ export const uploadDocuments = async (req, res) => {
       }
     }
 
-    console.log("uploadDocuments: req.body:", req.body);
-    console.log("uploadDocuments: normalized documentTypes:", documentTypes);
+    
 
     // --- Validate files ---
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ status: 0, message: "No files uploaded" });
     }
-    console.log(`uploadDocuments: ${req.files.length} files received`);
+    
 
     // --- Find student ---
     const student = await personaldetailModel.findOne({ studentid: studentId });
     if (!student) {
       return res.status(404).json({ status: 0, message: "Student not found" });
     }
-    console.log("student found:", studentId);
-    console.log("found student:", student);
-    const uploadedCloudinaryDocuments = [];
+        const uploadedCloudinaryDocuments = [];
 
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
@@ -199,7 +196,7 @@ export const uploadDocuments = async (req, res) => {
         uploadDate: new Date(),
       });
 
-      console.log("Uploaded to Cloudinary:", result.secure_url);
+      
     }
 
     // ensure documents array exists
@@ -266,7 +263,7 @@ export const verifyDocuments = async (req, res) => {
             generatedPassword
           );
 
-          console.log(`Login credentials sent to ${student.email}`);
+          
         }
       } catch (emailError) {
         console.error(

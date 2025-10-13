@@ -13,7 +13,7 @@ import {
 const router = express.Router();
 
 router.post("/login", login);
-router.post("/signup",signup);
+// router.post("/signup",signup);
 
 router.post("/send-verification-code", sendVerificationCode);
 router.post("/verify-code", verifySignupOtp);

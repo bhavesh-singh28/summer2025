@@ -45,12 +45,12 @@ const MenuManagement = () => {
     try {
       setLoading(true);
       const response = await getWeeklyMenu();
-      console.log("Fetched menu response:", response);
+      ("Fetched menu response:", response);
       if (response.success) {
-        console.log("Menu data:", response.data);
-        console.log("Menu count:", response.data.length);
+        ("Menu data:", response.data);
+        ("Menu count:", response.data.length);
         response.data.forEach((menu) => {
-          console.log(
+          (
             `Menu for ${menu.day}: ${menu.meals?.length} meals, Date: ${menu.date}`
           );
         });
@@ -78,9 +78,9 @@ const MenuManagement = () => {
         })),
       };
 
-      console.log("Sending menu data:", formattedMenu);
+      ("Sending menu data:", formattedMenu);
       const response = await createMenu(formattedMenu);
-      console.log("Response received:", response);
+      ("Response received:", response);
 
       if (response.success) {
         setActiveTab("view");

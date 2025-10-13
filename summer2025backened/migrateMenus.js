@@ -7,11 +7,11 @@ dotenv.config();
 async function migrateMenuData() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("Connected to MongoDB");
+    ("Connected to MongoDB");
 
     // Get all existing menus
     const existingMenus = await Menu.find({});
-    console.log(`Found ${existingMenus.length} existing menus`);
+    (`Found ${existingMenus.length} existing menus`);
 
     // Group menus by day and keep the most recent one for each day
     const menusByDay = {};
@@ -25,7 +25,7 @@ async function migrateMenuData() {
 
     // Delete all existing menus
     await Menu.deleteMany({});
-    console.log("Cleared all existing menus");
+    ("Cleared all existing menus");
 
     // Create new menus without dates
     const newMenus = [];
@@ -43,14 +43,14 @@ async function migrateMenuData() {
 
     if (newMenus.length > 0) {
       await Menu.insertMany(newMenus);
-      console.log(`Created ${newMenus.length} migrated menus`);
+      (`Created ${newMenus.length} migrated menus`);
 
       newMenus.forEach((menu) => {
-        console.log(`- ${menu.day}: ${menu.meals.length} meals`);
+        (`- ${menu.day}: ${menu.meals.length} meals`);
       });
     }
 
-    console.log("Menu migration completed successfully!");
+    ("Menu migration completed successfully!");
     process.exit(0);
   } catch (error) {
     console.error("Error migrating menu data:", error);

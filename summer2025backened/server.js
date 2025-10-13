@@ -22,18 +22,30 @@ dotenv.config();
 const app = express();
 
 
-cron.schedule("0 0 * * *", () => {
-
-  console.log("🌙 Running midnight reset...");
-  resetAllStats();
-});
 
 // Get directory name for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
+app.use(express.json({
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf);
+    } catch {
+      throw new Error('INVALID_JSON');
+    }
+  }
+}));
+
+// 🧱 Global error handler for invalid JSON
+app.use((err, req, res, next) => {
+  if (err.message === 'INVALID_JSON' || err instanceof SyntaxError) {
+    return res.status(400).json({ error: 'Invalid JSON format in request body' });
+  }
+  next(err);
+});
 app.use(express.urlencoded({ limit: '50mb', extended: true })); // Also increased limit
 // ...
 
@@ -59,6 +71,6 @@ mongoose
   .then(() => {
     console.log("MongoDB connected");
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(` Server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
-  .catch((err) => console.error(" DB Error:", err.message));
+  .catch((err) => console.error("DB Error:", err.message));

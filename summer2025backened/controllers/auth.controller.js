@@ -26,21 +26,16 @@ export const sendVerificationCode = async (req, res) => {
 
   try {
     const otp = generateOtp();
-    console.log(otp);
     await sendOtpVerificationEmail(email, otp);
     await Otp.create({ email, otp });
-
-    console.log(`OTP ${otp} sent to ${email}`);
     res.status(200).json({ message: "Verification code sent successfully" });
   } catch (err) {
-    console.error("Error sending OTP:", err);
     res.status(500).json({ error: "Failed to send verification code", details: err.message });
   }
 };
 
 export const verifySignupOtp = async (req, res) => {
   const { email, otp } = req.body;
-  console.log("OTP verification request received:", { email, otp });
   if (!email || !otp) return res.status(400).json({ error: "Email and OTP required" });
 
   try {
@@ -92,8 +87,10 @@ export const resendVerificationCode = async (req, res) => {
 
 
 export const login = async (req, res) => {
-  const { email, password, role } = req.body;
-  console.log("Login request received:", { email, role });
+  if (!req.body) {
+    return res.status(400).json({ error: "Unauthorized Access" });
+  }
+  const { email, password, role } = req.body || {};
 
   if (!email || !password || !role) {
     return res.status(400).json({ error: "Email, password, and role are required" });
@@ -103,34 +100,36 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email, role }).populate("studentDetails", "firstname lastname email phone  imageUrl");
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: "Invalid Username or Password" });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ error: "Invalid username or password" });
     }
     if (!user.isVerified) {
-      return res.status(403).json({ error: "User not verified" });
+      return res.status(403).json({ error: "User not verified contact admin office" });
     }
     const token = jsonwebtoken.sign(
-      { id: user._id,email: user.email,
-         role: user.role },
+      {
+        id: user._id, email: user.email,
+        role: user.role
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
     res.status(200).json({
-  success: true,
-  message: "Login successful",
-  token,
-  user: {
-    id: user._id,
-    email: user.email,
-    role: user.role,
-    studentDetails: user.studentDetails, 
-  },
-});
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        studentDetails: user.studentDetails,
+      },
+    });
 
   } catch (err) {
     console.error("Login error:", err);

@@ -68,10 +68,8 @@ const StudentExpenses = () => {
 
       // Ensure description is not empty, provide default if needed
       const description = expenseData.description?.trim() || "Mess Expense";
-
-      console.log("API POST:", "/api/expense/add-expense");
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/expense/add-expense`,
+        `${import.meta.env.VITE_BACKEND_URL}/mess-staff/add-expense`,
         {
           studentid: expenseData.studentid.toUpperCase(),
           amount: parseFloat(expenseData.amount),
@@ -111,7 +109,7 @@ const StudentExpenses = () => {
     const fetchRecentExpenses = async () => {
       try {
         const token = localStorage.getItem("token");
-  console.log("API GET:", "/api/expense/transactions");
+
   const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/expense/transactions`, {
           headers: {
             Authorization: `Bearer ${token}`,

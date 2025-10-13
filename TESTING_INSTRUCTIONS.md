@@ -52,7 +52,7 @@ Also check for these logs from the SignupFlow component:
 
 ## Remove Debug Logs
 
-Once confirmed working, remove console.log statements from:
+Once confirmed working, remove  statements from:
 
 - `handleNext` function in PersonalDetails.jsx
 - `updateSignupData` function in SignupFlow.jsx

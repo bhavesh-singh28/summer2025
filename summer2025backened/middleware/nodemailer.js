@@ -42,7 +42,7 @@ Mess and Canteen Management Team`,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("Signup email sent to", to);
+    
   } catch (error) {
     console.error("Error sending signup email:", error);
   }
@@ -70,7 +70,6 @@ Mess and Canteen Management Team`,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("OTP email sent to", to);
   } catch (error) {
     console.error("Error sending OTP email:", error);
     throw error;
@@ -162,7 +161,7 @@ Mess & Canteen Management Team`,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("Login credentials email sent to", to);
+    
   } catch (error) {
     console.error("Error sending login credentials email:", error);
     throw error;

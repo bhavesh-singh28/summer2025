@@ -15,10 +15,7 @@ import { verifyToken, restrictTo } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Add a simple test route first
-router.get("/test", (req, res) => {
-  res.json({ message: "Mess staff routes are working!" });
-});
+
 
 // Add a test route for transactions without auth
 router.get("/transactions-test", (req, res) => {

@@ -34,33 +34,33 @@ const StudentTransactions = () => {
 
       // First, test basic connectivity
       try {
-        console.log("🧪 Testing server connectivity...");
-  console.log("API GET:", "/api/server-test");
+        ("🧪 Testing server connectivity...");
+  ("API GET:", "/api/server-test");
   const serverTestResponse = await axios.get("/api/server-test");
-        console.log("✅ Server test response:", serverTestResponse.data);
+        ("✅ Server test response:", serverTestResponse.data);
 
-        console.log("🧪 Testing mess staff route connectivity...");
-  console.log("API GET:", "/api/mess-staff/test");
+        ("🧪 Testing mess staff route connectivity...");
+  ("API GET:", "/api/mess-staff/test");
   const testResponse = await axios.get("/api/mess-staff/test");
-        console.log("✅ Test route response:", testResponse.data);
+        ("✅ Test route response:", testResponse.data);
 
         // Test transactions route without auth
-        console.log("API GET:", "/api/expense/transactions");
+        ("API GET:", "/api/expense/transactions");
         const transactionsTestResponse = await axios.get(
           "/api/expense/transactions"
         );
-        console.log(
+        (
           "✅ Transactions test route response:",
           transactionsTestResponse.data
         );
       } catch (testErr) {
-        console.log("❌ Test route failed:", testErr.response?.status);
-        console.log("❌ Test route error:", testErr.message);
-        console.log("❌ Full test error:", testErr);
+        ("❌ Test route failed:", testErr.response?.status);
+        ("❌ Test route error:", testErr.message);
+        ("❌ Full test error:", testErr);
       }
 
       // Fetch mess transactions
-  console.log("API GET:", "/api/expense/transactions");
+  ("API GET:", "/api/expense/transactions");
   const messResponse = await axios.get("/expense/transactions", {
         headers: {
           Authorization: `Bearer ${token}`,

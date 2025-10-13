@@ -60,7 +60,7 @@ export default function Dashboard() {
           { day: "Sun", orders: 4 },
         ],
       });
-      console.log("Fetched stats:", resp.data);
+      ("Fetched stats:", resp.data);
     } catch (err) {
       console.error("Error fetching stats:", err);
       setStats({

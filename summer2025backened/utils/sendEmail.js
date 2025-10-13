@@ -20,7 +20,6 @@ const sendEmail = async (options) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully!');
   } catch (error) {
     console.error('ERROR SENDING EMAIL:', error);
     throw new Error(error.message); // pass the real reason up

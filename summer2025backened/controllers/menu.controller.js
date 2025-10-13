@@ -10,8 +10,7 @@ export const getWeeklyMenu = async (req, res) => {
       isActive: true,
     }).sort({ day: 1 });
 
-    console.log("Found menus:", menu.length);
-    menu.forEach((m) => console.log(`Menu: ${m.day}, Date: ${m.date}`));
+    
 
     res.json({
       success: true,
@@ -61,7 +60,6 @@ export const getDayMenu = async (req, res) => {
 export const createMenu = async (req, res) => {
   try {
     const { day, meals } = req.body;
-    console.log("Creating menu for:", { day, meals: meals?.length });
 
     // Use a default user ID if no authentication is available
     const userId = req.user?.id || new mongoose.Types.ObjectId();
@@ -69,7 +67,6 @@ export const createMenu = async (req, res) => {
     // Check if menu already exists for this day
     const existingMenu = await Menu.findOne({ day });
 
-    console.log("Existing menu found:", !!existingMenu);
 
     if (existingMenu) {
       // Update existing menu
@@ -77,7 +74,7 @@ export const createMenu = async (req, res) => {
       existingMenu.updatedAt = new Date();
       await existingMenu.save();
 
-      console.log("Menu updated successfully");
+
       res.json({
         success: true,
         message: "Menu updated successfully",
@@ -92,7 +89,7 @@ export const createMenu = async (req, res) => {
       });
 
       await newMenu.save();
-      console.log("New menu created successfully");
+      
 
       res.status(201).json({
         success: true,
