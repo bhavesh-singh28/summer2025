@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { UserCircle, ChevronDown, DollarSign } from "lucide-react";
+import { Menu, X, UserCircle, ChevronDown, DollarSign } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   Users,
   Utensils,
-  ScrollText,
   CreditCard,
   Megaphone,
   Settings,
@@ -14,6 +13,7 @@ import {
 
 export default function AdminLayout() {
   const [open, setOpen] = useState(false);
+  const [mobileSidebar, setMobileSidebar] = useState(false);
   const dropdownRef = useRef(null);
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -29,12 +29,10 @@ export default function AdminLayout() {
     { name: "Students", path: "/admin/students", icon: <Users size={18} /> },
     { name: "Menu Management", path: "/admin/menu", icon: <Utensils size={18} /> },
     { name: "Mess Management", path: "/admin/mess", icon: <Users size={18} /> },
-    // { name: "Canteen Management", path: "/admin/canteen", icon: <ScrollText size={18} /> },
     { name: "Student Transactions", path: "/admin/student-transactions", icon: <DollarSign className="w-5 h-5" /> },
     { name: "Billing & Payments", path: "/admin/billing", icon: <CreditCard size={18} /> },
     { name: "Notices", path: "/admin/notices", icon: <Megaphone size={18} /> },
-    // { name: "Settings", path: "/admin/settings", icon: <Settings size={18} /> },
-    { name: "Logout", onClick: handleLogout, icon: <Settings size={18} /> },
+    { name: "Logout", onClick: handleLogout, icon: <Settings size={18} />, className: "text-red-200 hover:text-red-500" },
   ];
 
   useEffect(() => {
@@ -48,8 +46,8 @@ export default function AdminLayout() {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-800 font-sans ">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-gray-50 text-gray-800 font-sans">
+      {/* Sidebar (Desktop) */}
       <aside className="hidden sm:block w-64 bg-[#ee8d4a] text-white shadow-xl">
         <div className="p-6">
           <h2 className="text-2xl font-bold tracking-wide mb-8">🏢 Admin Panel</h2>
@@ -63,7 +61,7 @@ export default function AdminLayout() {
                     `flex items-center gap-3 px-4 py-2 rounded-lg transition duration-200 ${
                       isActive
                         ? "bg-white text-[#ee8d4a] font-semibold shadow-sm"
-                        : "hover:bg-white hover:bg-opacity-20"
+                        : "hover:bg-white hover:bg-opacity-100 hover:text-[#ee8d4a]"
                     }`
                   }
                 >
@@ -87,13 +85,76 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Mobile Sidebar Overlay */}
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-40 z-40 sm:hidden transition-opacity ${
+          mobileSidebar ? "opacity-100 visible" : "opacity-0 invisible"
+        }`}
+        onClick={() => setMobileSidebar(false)}
+      ></div>
+
+      {/* Mobile Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-64 bg-[#ee8d4a] text-white z-50 transform transition-transform duration-300 sm:hidden ${
+          mobileSidebar ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-6 flex justify-between items-center">
+          <h2 className="text-xl font-bold">🏢 Admin Panel</h2>
+          <X size={24} className="cursor-pointer" onClick={() => setMobileSidebar(false)} />
+        </div>
+        <nav className="flex flex-col gap-2 p-4">
+          {navItems.map((item) =>
+            item.path ? (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                onClick={() => setMobileSidebar(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-2 rounded-lg transition duration-200 ${
+                    isActive
+                      ? "bg-white text-[#ee8d4a] font-semibold shadow-sm"
+                      : "hover:bg-white hover:bg-opacity-20"
+                  }`
+                }
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </NavLink>
+            ) : (
+              <div
+                key={item.name}
+                onClick={() => {
+                  item.onClick?.();
+                  setMobileSidebar(false);
+                }}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition duration-200 cursor-pointer ${
+                  item.className || "hover:bg-white hover:bg-opacity-20"
+                }`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </div>
+            )
+          )}
+        </nav>
+      </aside>
+
+      {/* Main Section */}
       <div className="flex flex-col flex-1">
         {/* Header */}
-        <header className="bg-white shadow px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 mr-4">
-            <img src="/PU_Logo.png" alt="PU Logo" className="h-16 w-auto" />
-            <h1 className="text-xl sm:text-3xl font-semibold text-gray-800">
+        <header className="bg-white shadow px-4 sm:px-6 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            {/* Mobile Menu Button */}
+            <button
+              className="sm:hidden p-2 text-gray-600 hover:text-gray-800 focus:outline-none"
+              onClick={() => setMobileSidebar(true)}
+            >
+              <Menu size={24} />
+            </button>
+
+            <img src="/PU_Logo.png" alt="PU Logo" className="h-10 sm:h-16 w-auto" />
+            <h1 className="text-lg sm:text-2xl font-semibold text-gray-800 leading-tight">
               Baba Banda Singh Bahadur Boys Hostel 8
             </h1>
           </div>
@@ -145,12 +206,12 @@ export default function AdminLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-8 overflow-auto">
+        <main className="flex-1 p-4 sm:p-8 overflow-auto">
           <Outlet />
         </main>
 
         {/* Footer */}
-        <footer className="bg-white text-center text-gray-500 py-3 text-sm border-t">
+        <footer className="bg-white text-center text-gray-500 py-3 text-xs sm:text-sm border-t">
           © {new Date().getFullYear()} Hostel Management System • Made by UIETians
         </footer>
       </div>

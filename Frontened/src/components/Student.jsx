@@ -9,8 +9,6 @@ import {
   User,
   X as CloseIcon,
 } from "lucide-react";
-// toast removed - using inline banners
-
 
 const PersonalDetails = () => {
   const [personalDetails, setPersonalDetails] = useState([]);
@@ -18,9 +16,6 @@ const PersonalDetails = () => {
   const [showDocuments, setShowDocuments] = useState(false);
   const [showCompleteDetails, setShowCompleteDetails] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-
-  // NEW: State for the image viewer modal
   const [showImageModal, setShowImageModal] = useState(false);
   const [largeImageUrl, setLargeImageUrl] = useState("");
   const [generalError, setGeneralError] = useState("");
@@ -30,13 +25,9 @@ const PersonalDetails = () => {
     axios
       .get(`${import.meta.env.VITE_BACKEND_URL}/personaldetail/view`)
       .then((res) => {
-        if (res.data.status) {
-          setPersonalDetails(res.data.personaldetailList);
-        }
+        if (res.data.status) setPersonalDetails(res.data.personaldetailList);
       })
-      .catch((err) => {
-        console.error("Error fetching data:", err);
-      });
+      .catch((err) => console.error("Error fetching data:", err));
   };
 
   useEffect(() => {
@@ -50,40 +41,28 @@ const PersonalDetails = () => {
         { status }
       );
       setGeneralSuccess(`Documents ${status} successfully`);
-      getAllpersonalDetails(); // Refresh data to show updated status
+      getAllpersonalDetails();
     } catch (error) {
       console.error("Verification error:", error);
       setGeneralError("Failed to update verification status");
     }
   };
 
-  // NEW: Function to open the image modal
   const viewLargeImage = (imageUrl) => {
     setLargeImageUrl(imageUrl);
     setShowImageModal(true);
   };
+
   const filteredDetails = personalDetails.filter((detail) => {
-  const fullName = `${detail.firstname} ${detail.lastname}`.toLowerCase();
-  const room = detail.roomno?.toString() || "";
-  const phone = detail.phone?.toString() || "";
-
-  return (
-    fullName.includes(searchQuery.toLowerCase()) ||
-    room.includes(searchQuery) ||
-    phone.includes(searchQuery)
-  );
-});
-
-
-  const viewDocuments = (student) => {
-    setSelectedStudent(student);
-    setShowDocuments(true);
-  };
-
-  const viewCompleteDetails = (student) => {
-    setSelectedStudent(student);
-    setShowCompleteDetails(true);
-  };
+    const fullName = `${detail.firstname} ${detail.lastname}`.toLowerCase();
+    const room = detail.roomno?.toString() || "";
+    const phone = detail.phone?.toString() || "";
+    return (
+      fullName.includes(searchQuery.toLowerCase()) ||
+      room.includes(searchQuery) ||
+      phone.includes(searchQuery)
+    );
+  });
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -96,523 +75,251 @@ const PersonalDetails = () => {
     }
   };
 
-  // NEW: Helper function to format document types for better readability
-  const formatDocType = (type) => {
-    if (!type) return "Document";
-    // Adds a space before each capital letter (e.g., "studentIdCard" -> "Student Id Card")
-    return type
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (str) => str.toUpperCase());
-  };
+  const formatDocType = (type) =>
+    type
+      ? type.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())
+      : "Document";
 
   return (
-    <div className="w-full mx-auto no-scrollbar">
-      {generalError && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">{generalError}</div>}
-      {generalSuccess && <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">{generalSuccess}</div>}
-      <div className="space-y-6 p-4 md:p-6 lg:p-8">
-        <h1 className="text-3xl font-bold text-gray-800">
-          🎓 Student Management
-        </h1>
-
-        <div className="flex justify-between items-center">
-          <div className="relative w-full max-w-sm">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e)=>{setSearchQuery(e.target.value)}}
-              placeholder="Search by name or email..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+    <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 py-4">
+      {generalError && (
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+          {generalError}
         </div>
+      )}
+      {generalSuccess && (
+        <div className="mb-3 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm">
+          {generalSuccess}
+        </div>
+      )}
 
-        <div className="max-w-screen sm:max-h-[500px] sm:w-full overflow-x-auto rounded-lg shadow bg-white">
-          <table className="max-w-screen table-auto border-collapse">
-            <thead>
-              <tr className="bg-gray-100 text-left text-sm uppercase text-gray-600">
-                <th className="px-4 py-4 whitespace-nowrap">Image</th>
-                <th className="px-4 py-4 whitespace-nowrap">Name</th>
-                <th className="px-4 py-4 whitespace-nowrap">DOB</th>
-                <th className="px-4 py-4 whitespace-nowrap">Phone</th>
-                <th className="px-4 py-4 whitespace-nowrap">Room</th>
-                <th className="px-4 py-4 whitespace-nowrap">Documents</th>
-                <th className="px-4 py-4 whitespace-nowrap">Status</th>
-                <th className="px-4 py-4 whitespace-nowrap">
-                  Complete Details
-                </th>
-                <th className="px-4 py-4 whitespace-nowrap">Action</th>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 text-center sm:text-left">
+        🎓 Student Management
+      </h1>
+
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+        <div className="relative w-full max-w-md">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name, room, or phone..."
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      {/* Responsive table wrapper */}
+      <div className="overflow-x-auto shadow-md rounded-lg bg-white">
+        <table className="min-w-full text-sm text-left">
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
+            <tr>
+              <th className="px-3 py-3">Image</th>
+              <th className="px-3 py-3">Name</th>
+              <th className="px-3 py-3">DOB</th>
+              <th className="px-3 py-3">Phone</th>
+              <th className="px-3 py-3">Room</th>
+              <th className="px-3 py-3">Docs</th>
+              <th className="px-3 py-3">Status</th>
+              <th className="px-3 py-3">Details</th>
+              <th className="px-3 py-3 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredDetails.map((detail, index) => (
+              <tr
+                key={index}
+                className="border-b hover:bg-gray-50 transition-all duration-200"
+              >
+                <td className="px-3 py-2">
+                  <button
+                    onClick={() => viewLargeImage(detail.imageUrl)}
+                    className="focus:outline-none"
+                  >
+                    <img
+                      src={detail.imageUrl}
+                      alt={`${detail.firstname} ${detail.lastname}`}
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-gray-200 hover:border-blue-500 transition"
+                    />
+                  </button>
+                </td>
+                <td className="px-3 py-2 font-medium text-gray-900">
+                  {detail.firstname} {detail.lastname}
+                </td>
+                <td className="px-3 py-2 text-gray-600">
+                  {detail.DOB || "—"}
+                </td>
+                <td className="px-3 py-2 text-gray-600">{detail.phone}</td>
+                <td className="px-3 py-2">{detail.roomno || "—"}</td>
+                <td className="px-3 py-2">
+                  <div className="flex items-center space-x-2">
+                    <span>{detail.documents?.length || 0}</span>
+                    {detail.documents?.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setSelectedStudent(detail);
+                          setShowDocuments(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </td>
+                <td className="px-3 py-2 flex items-center gap-2">
+                  {getStatusIcon(detail.verificationStatus)}
+                  <span className="capitalize">
+                    {detail.verificationStatus || "pending"}
+                  </span>
+                </td>
+                <td className="px-3 py-2">
+                  <button
+                    onClick={() => {
+                      setSelectedStudent(detail);
+                      setShowCompleteDetails(true);
+                    }}
+                    className="text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>View</span>
+                  </button>
+                </td>
+                <td className="px-3 py-2 text-center">
+                  {detail.verificationStatus === "pending" && (
+                    <div className="flex flex-col sm:flex-row justify-center gap-2">
+                      <button
+                        onClick={() =>
+                          handleVerifyDocuments(detail.studentid, "approved")
+                        }
+                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs sm:text-sm"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleVerifyDocuments(detail.studentid, "rejected")
+                        }
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs sm:text-sm"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredDetails.map((detail, index) => (
-                <tr
-                  key={index}
-                  className="border-b hover:bg-gray-50 transition-all duration-200"
-                >
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => viewLargeImage(detail.imageUrl)}
-                      className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-full"
-                    >
-                      <img
-                        src={detail.imageUrl}
-                        alt={`${detail.firstname} ${detail.lastname}`}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 hover:border-blue-500 transition"
-                      />
-                    </button>
-                  </td>
-                  <td className="px-4 py-4 font-medium text-gray-900 whitespace-nowrap">
-                    {detail.firstname} {detail.lastname}
-                  </td>
-                  <td className="px-4 py-4 text-gray-600 whitespace-nowrap">
-                    {detail.DOB}
-                  </td>
-                  <td className="px-4 py-4 text-gray-600 whitespace-nowrap">
-                    {detail.phone}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    {detail.roomno}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm">
-                        {detail.documents?.length || 0} files
-                      </span>
-                      {detail.documents?.length > 0 && (
-                        <button
-                          onClick={() => viewDocuments(detail)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(detail.verificationStatus)}
-                      <span className="text-sm capitalize">
-                        {detail.verificationStatus || "pending"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => viewCompleteDetails(detail)}
-                      className="text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
-                    >
-                      <User className="w-4 h-4" />
-                      <span className="text-sm">View</span>
-                    </button>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex space-x-2">
-                      {detail.documents?.length > 0 &&
-                        detail.verificationStatus === "pending" && (
-                          <>
-                            {/* ✅ Approve button */}
-                            <button
-                              onClick={async () => {
-                                setPersonalDetails((prev) =>
-                                  prev.map((item) =>
-                                    item.studentid === detail.studentid
-                                      ? { ...item, approving: true }
-                                      : item
-                                  )
-                                );
-                                await handleVerifyDocuments(
-                                  detail.studentid,
-                                  "approved"
-                                );
-                                setPersonalDetails((prev) =>
-                                  prev.map((item) =>
-                                    item.studentid === detail.studentid
-                                      ? { ...item, approving: false }
-                                      : item
-                                  )
-                                );
-                              }}
-                              disabled={detail.approving}
-                              className={`flex items-center bg-green-500 text-white px-3 py-1 rounded text-sm 
-              ${
-                detail.approving
-                  ? "opacity-70 cursor-not-allowed"
-                  : "hover:bg-green-600"
-              }`}
-                            >
-                              {detail.approving ? (
-                                <>
-                                  <svg
-                                    className="mr-2 h-4 w-4 animate-spin text-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <circle
-                                      className="opacity-25"
-                                      cx="12"
-                                      cy="12"
-                                      r="10"
-                                      stroke="currentColor"
-                                      strokeWidth="4"
-                                    ></circle>
-                                    <path
-                                      className="opacity-75"
-                                      fill="currentColor"
-                                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                                    ></path>
-                                  </svg>
-                                  Processing…
-                                </>
-                              ) : (
-                                "Approve"
-                              )}
-                            </button>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-                            {/* ❌ Reject button */}
-                            <button
-                              onClick={async () => {
-                                setPersonalDetails((prev) =>
-                                  prev.map((item) =>
-                                    item.studentid === detail.studentid
-                                      ? { ...item, rejecting: true }
-                                      : item
-                                  )
-                                );
-                                await handleVerifyDocuments(
-                                  detail.studentid,
-                                  "rejected"
-                                );
-                                setPersonalDetails((prev) =>
-                                  prev.map((item) =>
-                                    item.studentid === detail.studentid
-                                      ? { ...item, rejecting: false }
-                                      : item
-                                  )
-                                );
-                              }}
-                              disabled={detail.rejecting}
-                              className={`flex items-center bg-red-500 text-white px-3 py-1 rounded text-sm 
-              ${
-                detail.rejecting
-                  ? "opacity-70 cursor-not-allowed"
-                  : "hover:bg-red-600"
-              }`}
-                            >
-                              {detail.rejecting ? (
-                                <>
-                                  <svg
-                                    className="mr-2 h-4 w-4 animate-spin text-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <circle
-                                      className="opacity-25"
-                                      cx="12"
-                                      cy="12"
-                                      r="10"
-                                      stroke="currentColor"
-                                      strokeWidth="4"
-                                    ></circle>
-                                    <path
-                                      className="opacity-75"
-                                      fill="currentColor"
-                                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                                    ></path>
-                                  </svg>
-                                  Processing…
-                                </>
-                              ) : (
-                                "Reject"
-                              )}
-                            </button>
-                          </>
-                        )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* MODAL 1: Image Viewer Modal */}
-        {showImageModal && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowImageModal(false)}
-          >
+      {/* Modal: Image Viewer */}
+      {showImageModal && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <div className="relative max-w-3xl w-full">
             <button
               onClick={() => setShowImageModal(false)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
-              aria-label="Close image viewer"
+              className="absolute -top-10 right-0 text-white hover:text-gray-300"
             >
               <CloseIcon className="w-8 h-8" />
             </button>
-            <div className="relative max-w-3xl max-h-[90vh]">
-              <img
-                src={largeImageUrl}
-                alt="Student Profile"
-                className="w-full h-auto object-contain rounded-lg shadow-lg"
-                onClick={(e) => e.stopPropagation()} // Prevents modal from closing when clicking the image
-              />
-            </div>
+            <img
+              src={largeImageUrl}
+              alt="Student"
+              className="w-full h-auto rounded-lg object-contain max-h-[80vh]"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
-        )}
-
-        {/* MODAL 2: Redesigned Document Viewer Modal */}
-        {showDocuments && selectedStudent && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto shadow-2xl">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-800">
-                  Documents - {selectedStudent.firstname}{" "}
-                  {selectedStudent.lastname}
-                </h3>
-                <button
-                  onClick={() => setShowDocuments(false)}
-                  className="text-gray-400 hover:text-gray-700 p-1 rounded-full"
-                  aria-label="Close document viewer"
-                >
-                  <CloseIcon className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {selectedStudent.documents?.map((doc, index) => (
-                  <div
-                    key={index}
-                    className="border border-gray-200 rounded-xl p-4 shadow-sm bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-bold text-lg text-gray-800">
-                        {formatDocType(doc.type)}
-                      </h4>
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-50 transition"
-                        title="Download Document"
-                      >
-                        <Download className="w-5 h-5" />
-                      </a>
-                    </div>
-      {doc.mimetype === "application/pdf" ? (
-        
-        <iframe
-          src={doc.url}
-          title={doc.originalName}
-          className="w-full h-40 border rounded"
-onError={(e) => {
-  e.target.style.display = 'none';
-  const fallback = e.target.parentElement.querySelector('.pdf-fallback');
-  if (fallback) fallback.style.display = 'block';
-}}
-        />
-      ) : (
-        <img
-          src={doc.url}
-          alt={doc.originalName}
-          className="w-full h-40 object-cover rounded"
-        />
+        </div>
       )}
-{doc.mimetype === "application/pdf" && (
-            <div className="pdf-fallback mt-2 hidden text-center text-gray-500">
-                <p>Cannot display PDF. <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Download to view</a></p>
-            </div>
-        )}
-                    <p
-                      className="text-sm text-gray-600 mb-1 truncate"
-                      title={doc.originalName}
-                    >
-                      {doc.originalName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* MODAL 3: Complete Details Modal */}
-        {showCompleteDetails && selectedStudent && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-8 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-800">
-                  Complete Student Details
-                </h3>
-                <button
-                  onClick={() => setShowCompleteDetails(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                  aria-label="Close details viewer"
+      {/* Modal: Document Viewer (responsive grid) */}
+      {showDocuments && selectedStudent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-4xl max-h-[85vh] overflow-y-auto shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">
+                Documents - {selectedStudent.firstname}{" "}
+                {selectedStudent.lastname}
+              </h3>
+              <button
+                onClick={() => setShowDocuments(false)}
+                className="text-gray-400 hover:text-gray-700"
+              >
+                <CloseIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {selectedStudent.documents?.map((doc, i) => (
+                <div
+                  key={i}
+                  className="border rounded-lg p-3 bg-gray-50 shadow-sm"
                 >
-                  &times;
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {/* Personal Information */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
-                    <User className="w-5 h-5 mr-2" />
-                    Personal Information
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.firstname}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.lastname}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.phone}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Date of Birth
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {new Date(selectedStudent.DOB).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.email}
-                      </p>
-                    </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-semibold text-gray-800 text-sm">
+                      {formatDocType(doc.type)}
+                    </h4>
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      <Download className="w-4 h-4" />
+                    </a>
                   </div>
+                  {doc.mimetype === "application/pdf" ? (
+                    <iframe
+                      src={doc.url}
+                      title={doc.originalName}
+                      className="w-full h-40 border rounded"
+                    />
+                  ) : (
+                    <img
+                      src={doc.url}
+                      alt={doc.originalName}
+                      className="w-full h-40 object-cover rounded"
+                    />
+                  )}
+                  <p className="text-xs mt-2 truncate">{doc.originalName}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
-                {/* Address Information */}
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-green-800 mb-4">
-                    Address Information
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Address
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.address}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        City
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.city}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        State
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.state}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        ZIP Code
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.zipcode}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+      {/* Modal: Complete Details (scrollable) */}
+      {showCompleteDetails && selectedStudent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 sm:p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
+                Complete Student Details
+              </h3>
+              <button
+                onClick={() => setShowCompleteDetails(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                &times;
+              </button>
+            </div>
 
-                {/* Student & Hostel Information */}
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-4">
-                    Student & Hostel Details
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Student ID
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border font-mono">
-                        {selectedStudent.studentid}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Hostel Block
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.hostelblock}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Room Number
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.roomno}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Document Status */}
-                <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-orange-800 mb-4">
-                    Document Status
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Documents Uploaded
-                      </label>
-                      <p className="text-gray-900 bg-white px-3 py-2 rounded border">
-                        {selectedStudent.documents?.length || 0} files
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Verification Status
-                      </label>
-                      <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded border">
-                        {getStatusIcon(selectedStudent.verificationStatus)}
-                        <span className="capitalize">
-                          {selectedStudent.verificationStatus || "pending"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div className="space-y-6 text-sm sm:text-base">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg">
+                <p><strong>Name:</strong> {selectedStudent.firstname} {selectedStudent.lastname}</p>
+                <p><strong>Phone:</strong> {selectedStudent.phone}</p>
+                <p><strong>Email:</strong> {selectedStudent.email}</p>
+                <p><strong>Room:</strong> {selectedStudent.roomno}</p>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
