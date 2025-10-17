@@ -10,7 +10,7 @@ const StudentLogin = () => {
     role: "student",
   });
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login  } = useAuth();
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -28,7 +28,7 @@ const StudentLogin = () => {
       localStorage.setItem("studentid", user.studentDetails.studentid);
     }
     
-      login(user); // context login
+      login(user , token); // context login
 
       setSuccessMessage("Logged in successfully!");
       setTimeout(() => {
