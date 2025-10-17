@@ -24,9 +24,6 @@ const StudentLogin = () => {
       const res = await axios.post("auth/login", formData);
       const { token, user } = res.data;
 
-      // Save token in localStorage or context
-      localStorage.setItem("token", token);
-
       if (user?.studentDetails?.studentid) {
       localStorage.setItem("studentid", user.studentDetails.studentid);
     }
