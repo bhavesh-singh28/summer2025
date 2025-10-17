@@ -9,7 +9,7 @@ import {
 } from "../controllers/messStaff.controller.js";
 import {
   createExpense,
-  getMessTransactionsByRole,
+  // getMessTransactionsByRole,
 } from "../controllers/expenseController.js";
 import { verifyToken, restrictTo } from "../middleware/auth.js";
 
@@ -44,6 +44,6 @@ router.post(
 );
 router.post("/auth/login", loginMessStaff); // ✅ LOGIN for mess staff
 
-router.get("/transactions", verifyToken, getMessTransactionsByRole);
+// router.get("/transactions", verifyToken, getMessTransactionsByRole);
 
 export default router;
