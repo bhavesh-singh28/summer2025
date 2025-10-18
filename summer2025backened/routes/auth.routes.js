@@ -14,6 +14,9 @@ const router = express.Router();
 
 router.post("/login", login);
 router.post("/signup",signup);
+router.get("/verifyToken", verifyToken, (req, res) => {
+  res.status(200).json({ message: "Token is valid" });
+});
 
 router.post("/send-verification-code", sendVerificationCode);
 router.post("/verify-code", verifySignupOtp);

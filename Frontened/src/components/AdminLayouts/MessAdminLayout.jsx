@@ -104,7 +104,7 @@ export default function MessAdminLayout() {
                   `flex items-center gap-3 px-4 py-2 rounded-lg transition duration-200 ${
                     isActive
                       ? "bg-white text-green-700 font-semibold shadow-sm"
-                      : "hover:bg-white hover:bg-opacity-20"
+                      : "hover:bg-white hover:text-green-700 hover:bg-opacity-20"
                   }`
                 }
               >
