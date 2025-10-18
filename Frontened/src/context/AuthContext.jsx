@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
 const AuthContext = createContext();
 
@@ -11,24 +12,47 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    // Check if user is already logged in (from localStorage)
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState(null);
 
-const login = (userData, token) => {
-  setUser(userData);
-  localStorage.setItem("user", JSON.stringify(userData));
-  localStorage.setItem("token", token);
-};
-
+  const login = (userData, token) => {
+    setUser(userData);
+    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("token", token);
+  };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
   };
+
+  // ✅ Check token validity once when app loads
+  useEffect(() => {
+    const verifyToken = async () => {
+      const token = localStorage.getItem("token");
+      const savedUser = localStorage.getItem("user");
+
+      if (!token || !savedUser) {
+        logout();
+        return;
+      }
+
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/verifyToken`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.message != "Token is valid") {
+          logout();
+        }
+      } catch (err) {
+        // token invalid or expired
+        logout();
+      }
+    };
+
+    verifyToken();
+  }, []);
 
   const isLoggedIn = !!user;
 

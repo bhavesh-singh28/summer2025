@@ -30,11 +30,11 @@ router.get("/transactions-test", (req, res) => {
   });
 });
 
-router.get("/", getMessStaff);
-router.post("/", addMessStaff); // ✅ Add new mess staff
-router.put("/:id", updateMessStaff);
-router.delete("/:id", deleteMessStaff);
-router.get("/stats", transactionStats);
+router.get("/", verifyToken, getMessStaff);
+router.post("/", verifyToken, addMessStaff); // ✅ Add new mess staff
+router.put("/:id", verifyToken, updateMessStaff);
+router.delete("/:id", verifyToken, deleteMessStaff);
+router.get("/stats", verifyToken, transactionStats);
 
 router.post(
   "/add-expense",
