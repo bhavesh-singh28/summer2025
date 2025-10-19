@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Plus, Search, DollarSign, User, Receipt } from "lucide-react";
 import PaginationControls from "./common/PaginationControls";
+import MonthDropdownButton from "./common/MonthDropdownButton";
 
 const StudentExpenses = () => {
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
@@ -171,19 +172,7 @@ const StudentExpenses = () => {
 
   const months = getLastMonths(12);
 
-  const downloadRef = useRef(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (showDownloadOptions && downloadRef.current && !downloadRef.current.contains(e.target)) {
-        setShowDownloadOptions(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showDownloadOptions]);
+  const downloadRef = useRef(null); // retained if needed elsewhere
 
   // Build CSV from expenses array
   const buildCSV = (rows) => {
@@ -278,30 +267,12 @@ const StudentExpenses = () => {
             <p className="text-gray-600">Manage and track student expenses</p>
           </div>
         </div>
-        <div className="relative" ref={downloadRef}>
-          <button
-            onClick={() => setShowDownloadOptions((s) => !s)}
-            className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md focus:outline-none"
-          >
-            Download Report
-          </button>
-
-          {showDownloadOptions && (
-            <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <ul className="max-h-64 overflow-y-auto">
-                {months.map((m) => (
-                  <li
-                    key={m.value}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                    onClick={() => handleDownloadForMonth(m.value)}
-                  >
-                    {m.label}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        <MonthDropdownButton
+          label="Download Report"
+          monthsCount={12}
+          align="right"
+          onSelectMonth={(value) => handleDownloadForMonth(value)}
+        />
       </div>
 
       {/* Form */}

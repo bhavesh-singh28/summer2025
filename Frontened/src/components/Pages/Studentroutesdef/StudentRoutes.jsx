@@ -10,6 +10,7 @@ import autoTable from "jspdf-autotable";
 import StudentSettings from "../../Students/Settings/StudentSettings";
 import defaultpic from "../../../assets/ProfilePic.png";
 import PaginationControls from "../../common/PaginationControls";
+import MonthDropdownButton from "../../common/MonthDropdownButton";
 
 // ----- Student Menu -----
 const StudentMenu = () => {
@@ -144,8 +145,8 @@ const StudentExpenses = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [student, setStudent] = useState(null); // to hold student base details
-  const [showExportMonths, setShowExportMonths] = useState(false);
-  const exportRef = useRef(null);
+  const [showExportMonths, setShowExportMonths] = useState(false); // legacy, can be removed later
+  const exportRef = useRef(null); // legacy, can be removed later
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -153,29 +154,7 @@ const StudentExpenses = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
 
-  const getLastMonths = (count = 12) => {
-    const months = [];
-    const now = new Date();
-    for (let i = 0; i < count; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = d.toLocaleString(undefined, { month: "long", year: "numeric" });
-      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      months.push({ label, value });
-    }
-    return months;
-  };
-
-  const exportMonths = getLastMonths(12);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (showExportMonths && exportRef.current && !exportRef.current.contains(e.target)) {
-        setShowExportMonths(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showExportMonths]);
+  // Month list and outside-click are now handled by MonthDropdownButton
 
   useEffect(() => {
     const fetchStudentDetails = async () => {
@@ -347,27 +326,12 @@ const StudentExpenses = () => {
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Recent Expenses</h2>
-            <div className="relative" ref={exportRef}>
-              <button
-                onClick={() => setShowExportMonths((s) => !s)}
-                className="bg-blue-600 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg text-sm"
-              >
-                Download Report
-              </button>
-
-              {showExportMonths && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                  <div className="p-2 text-sm font-medium text-gray-700">Select Month</div>
-                  <ul className="max-h-56 overflow-y-auto">
-                    {exportMonths.map((m) => (
-                      <li key={m.value} className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onClick={() => downloadStudentTotalsForMonth(m.value)}>
-                        {m.label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            <MonthDropdownButton
+              label="Download Report"
+              monthsCount={12}
+              align="right"
+              onSelectMonth={(value) => downloadStudentTotalsForMonth(value)}
+            />
           </div>
           <div className="space-y-3">
             {expenses.length === 0 ? (

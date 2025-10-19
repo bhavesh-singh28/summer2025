@@ -12,6 +12,7 @@ import axios from "../api/axiosConfig";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import PaginationControls from "./common/PaginationControls";
+import MonthDropdownButton from "./common/MonthDropdownButton";
 const StudentTransactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -41,19 +42,7 @@ const StudentTransactions = () => {
     return months;
   };
 
-  const months = getLastMonths(12);
-  const pdfRef = useRef(null);
-
-  // close month dropdown when clicking outside
-  useEffect(() => {
-    const handler = (e) => {
-      if (showPdfOptions && pdfRef.current && !pdfRef.current.contains(e.target)) {
-        setShowPdfOptions(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showPdfOptions]);
+  const months = getLastMonths(12); // retained if needed elsewhere
 
   useEffect(() => {
     fetchTransactions(page, limit);
@@ -377,32 +366,14 @@ const downloadPDFForMonth = (monthValue) => {
             </p>
           </div>
         </div>
-        <div className="relative" ref={pdfRef}>
-          <button
-            onClick={() => setShowPdfOptions((s) => !s)}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export PDF</span>
-          </button>
-
-          {showPdfOptions && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <div className="p-2 text-sm font-medium text-gray-700">Select Month</div>
-              <ul className="max-h-56 overflow-y-auto">
-                {months.map((m) => (
-                  <li
-                    key={m.value}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                    onClick={() => downloadPDFForMonth(m.value)}
-                  >
-                    {m.label}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        <MonthDropdownButton
+          label="Export PDF"
+          buttonClassName="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          buttonIcon={<Download className="w-4 h-4" />}
+          monthsCount={12}
+          align="right"
+          onSelectMonth={(value) => downloadPDFForMonth(value)}
+        />
       </div>
 
       {/* Stats Cards */}
