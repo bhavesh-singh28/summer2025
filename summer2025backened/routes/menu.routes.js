@@ -7,6 +7,7 @@ import {
   deleteMenu,
   getAllMenus,
 } from "../controllers/menu.controller.js";
+import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -41,9 +42,9 @@ router.get("/weekly", getWeeklyMenu);
 router.get("/day/:day", getDayMenu);
 
 // Admin routes
-router.post("/", createMenu);
-router.get("/all", getAllMenus);
-router.put("/:id", updateMenu);
-router.delete("/:id", deleteMenu);
+router.post("/", verifyToken, createMenu);
+router.get("/all", verifyToken, getAllMenus);
+router.put("/:id", verifyToken, updateMenu);
+router.delete("/:id", verifyToken, deleteMenu);
 
 export default router;
