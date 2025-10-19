@@ -180,6 +180,13 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
+    // sort logic
+    if (role === "student") {
+      expenses.sort((a, b) => new Date(b.date) - new Date(a.date)); // newer first
+    } else {
+      expenses.sort((a, b) => a.studentid - b.studentid); // smaller roll first
+    }
+
     // PDF setup
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename=expenses_${month}.pdf`);
@@ -189,20 +196,22 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
     // Title
     doc.fontSize(18).text("Monthly Expenses Report", { align: "center" });
     doc.fontSize(12).text(`Month: ${month}`, { align: "center" });
+    // date & time of download
+    const downloadTime = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+    doc.fontSize(10).text(`Downloaded on: ${downloadTime}`, { align: "center" });
     doc.moveDown(1);
 
-  const tableStartX = 50;
-  const rowHeight = 20;
-  const padding = 5;
-  let y = doc.y;
-  const bottomY = () => doc.page.height - doc.page.margins.bottom;
+    const tableStartX = 50;
+    const rowHeight = 20;
+    const padding = 5;
+    let y = doc.y;
+    const bottomY = () => doc.page.height - doc.page.margins.bottom;
 
     if (role === "student") {
       doc.fontSize(12).text(`Roll No: ${student.studentid}`, { align: "left" });
       doc.moveDown(0.5);
       y = doc.y;
 
-      // Table columns and header drawer
       const columns = [
         { label: "Date", x: 50, width: 100 },
         { label: "Description", x: 150, width: 250 },
@@ -221,10 +230,8 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
         return yh;
       };
 
-      // Draw initial header
       y = drawStudentHeader();
 
-      // Table rows with page-break handling
       for (const e of expenses) {
         if (y + rowHeight > bottomY()) {
           doc.addPage();
@@ -244,6 +251,7 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
 
     } else {
       // Admin
+      // ✅ Changed Email → Role
       doc.fontSize(12).text(`Role: ${role.charAt(0).toUpperCase() + role.slice(1)}`, { align: "left" });
       doc.moveDown(0.5);
       y = doc.y;
@@ -253,9 +261,8 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
       expenses.forEach((e) => {
         totals[e.studentid] = (totals[e.studentid] || 0) + (Number(e.amount) || 0);
       });
-      const sortedIds = Object.keys(totals).sort();
+      const sortedIds = Object.keys(totals).sort((a, b) => a - b); // ✅ Ensure roll sorted numerically
 
-      // Table columns and header drawer
       const columns = [
         { label: "Roll No", x: 50, width: 200 },
         { label: "Total (Rs.)", x: 250, width: 200 },
@@ -273,10 +280,8 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
         return yh;
       };
 
-      // Draw initial header
       y = drawAdminHeader();
 
-      // Table rows with page-break handling
       for (const id of sortedIds) {
         if (y + rowHeight > bottomY()) {
           doc.addPage();
