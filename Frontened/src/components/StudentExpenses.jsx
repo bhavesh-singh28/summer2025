@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Plus, Search, DollarSign, User, Receipt } from "lucide-react";
 import PaginationControls from "./common/PaginationControls";
+import MonthDropdownButton from "./common/MonthDropdownButton";
 
 const StudentExpenses = () => {
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
@@ -171,98 +172,35 @@ const StudentExpenses = () => {
 
   const months = getLastMonths(12);
 
-  const downloadRef = useRef(null);
+  const downloadRef = useRef(null); // retained if needed elsewhere
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (showDownloadOptions && downloadRef.current && !downloadRef.current.contains(e.target)) {
-        setShowDownloadOptions(false);
+  // New: Download PDF from backend
+  const handleDownloadForMonth = async (monthValue) => {
+    try {
+      const token = localStorage.getItem("token");
+      const url = `${import.meta.env.VITE_BACKEND_URL}/expense/download-pdf?month=${monthValue}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        alert("Failed to download PDF");
+        return;
       }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showDownloadOptions]);
-
-  // Build CSV from expenses array
-  const buildCSV = (rows) => {
-    if (!rows || rows.length === 0) return "";
-    const header = ["Student ID", "Amount", "Description", "Date"];
-    const csvRows = [header.join(",")];
-
-    rows.forEach((r) => {
-      // escape commas/newlines by wrapping in quotes and escaping internal quotes
-      const esc = (v) => {
-        if (v === undefined || v === null) return "";
-        const s = String(v);
-        if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-        return s;
-      };
-
-      csvRows.push([esc(r.studentid), esc(r.amount), esc(r.description), esc(new Date(r.date).toLocaleString())].join(","));
-    });
-
-    return csvRows.join("\n");
-  };
-
-  const handleDownloadForMonth = (monthValue) => {
-    // Filter recentExpenses by monthValue (YYYY-MM)
-    const filtered = recentExpenses.filter((exp) => {
-      const d = new Date(exp.date);
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      return ym === monthValue;
-    });
-
-    if (!filtered || filtered.length === 0) {
-      alert("No transactions found for the selected month.");
-      setShowDownloadOptions(false);
-      return;
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `student-expenses-summary-${monthValue}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      alert("Error downloading PDF");
     }
-
-    // Aggregate totals per studentid
-    const totals = filtered.reduce((acc, cur) => {
-      const id = (cur.studentid || "UNKNOWN").toString().toUpperCase();
-      const amt = parseFloat(cur.amount) || 0;
-      acc[id] = (acc[id] || 0) + amt;
-      return acc;
-    }, {});
-
-    // Build rows [{ studentid, total }]
-    const summaryRows = Object.keys(totals).map((id) => ({ studentid: id, total: totals[id] }));
-
-  // CSV header: Student ID, Total Amount
-  const header = ["Student ID", "Total Amount"];
-  const csvRows = [];
-
-  // Add download timestamp row
-  const downloadedAt = new Date().toLocaleString();
-  csvRows.push([`Downloaded At:`, downloadedAt].join(","));
-  // blank line
-  csvRows.push("");
-  csvRows.push(header.join(","));
-    summaryRows.forEach((r) => {
-      const esc = (v) => {
-        if (v === undefined || v === null) return "";
-        const s = String(v);
-        if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-        return s;
-      };
-      csvRows.push([esc(r.studentid), esc(r.total.toFixed(2))].join(","));
-    });
-
-    const csv = csvRows.join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `student-expenses-summary-${monthValue}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setShowDownloadOptions(false);
   };
 
   return (
@@ -278,30 +216,12 @@ const StudentExpenses = () => {
             <p className="text-gray-600">Manage and track student expenses</p>
           </div>
         </div>
-        <div className="relative" ref={downloadRef}>
-          <button
-            onClick={() => setShowDownloadOptions((s) => !s)}
-            className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md focus:outline-none"
-          >
-            Download Report
-          </button>
-
-          {showDownloadOptions && (
-            <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <ul className="max-h-64 overflow-y-auto">
-                {months.map((m) => (
-                  <li
-                    key={m.value}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                    onClick={() => handleDownloadForMonth(m.value)}
-                  >
-                    {m.label}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        <MonthDropdownButton
+          label="Download Report"
+          monthsCount={12}
+          align="right"
+          onSelectMonth={(value) => handleDownloadForMonth(value)}
+        />
       </div>
 
       {/* Form */}
