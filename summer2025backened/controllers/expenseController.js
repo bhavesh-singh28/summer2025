@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import personaldetailModel from "../models/personaldetail.model.js";
 import messexpenses from "../models/messtransaction.model.js";
 import Stats from "../models/stats.model.js";
+import PDFDocument from "pdfkit";
 
 // ✅ Create Expense
 export const createExpense = async (req, res) => {
@@ -145,24 +146,145 @@ export const getRecentExpenses = async (req, res) => {
   }
 }; // <-- ✅ Closing getRecentExpenses
 
-// ✅ Get All Transactions Based on Role
-// export const getMessTransactionsByRole = async (req, res) => {
-//   try {
-//     const { role, email } = req.user;
-//     const trimmedEmail = email.trim();
+export const downloadMonthlyExpensesPDF = async (req, res) => {
+  try {
+    const { month } = req.query;
+    const { role, email: userEmail } = req.user;
 
-//     let transactions = [];
+    // Validate month YYYY-MM
+    if (!month || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return res.status(400).json({ message: "Invalid month. Use YYYY-MM" });
+    }
 
-//     if (role === "superadmin" || role === "messadmin") {
-//       transactions = await messexpenses.find().sort({ date: -1 });
-//     } else if (role === "student") {
-//       transactions = await messexpenses
-//         .find({
-//           email: { $regex: `^${trimmedEmail}$`, $options: "i" },
-//         })
-//         .sort({ date: -1 });
-//     } else {
-//       return res.status(403).json({
+    const startDate = new Date(`${month}-01T00:00:00Z`);
+    const endDate = new Date(startDate);
+    endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+
+    let expenses = [];
+    let student = null;
+
+    if (role === "student") {
+      student = await personaldetailModel.findOne({ email: userEmail }).lean();
+      if (!student) return res.status(404).json({ message: "Student not found" });
+
+      expenses = await messexpenses
+        .find({ studentid: student.studentid, date: { $gte: startDate, $lt: endDate } })
+        .sort({ date: 1 })
+        .lean();
+    } else if (role === "superadmin" || role === "messadmin") {
+      expenses = await messexpenses
+        .find({ date: { $gte: startDate, $lt: endDate } })
+        .sort({ studentid: 1 })
+        .lean();
+    } else {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    // PDF setup
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=expenses_${month}.pdf`);
+    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    doc.pipe(res);
+
+    // Title
+    doc.fontSize(18).text("Monthly Expenses Report", { align: "center" });
+    doc.fontSize(12).text(`Month: ${month}`, { align: "center" });
+    doc.moveDown(1);
+
+    const tableStartX = 50;
+    const rowHeight = 20;
+    const padding = 5;
+    let y = doc.y;
+
+    if (role === "student") {
+      doc.fontSize(12).text(`Roll No: ${student.studentid}`, { align: "left" });
+      doc.moveDown(0.5);
+      y = doc.y;
+
+      // Table header
+      const columns = [
+        { label: "Date", x: 50, width: 100 },
+        { label: "Description", x: 150, width: 250 },
+        { label: "Amount (Rs.)", x: 400, width: 100 },
+      ];
+
+      // Draw header background
+      doc.rect(tableStartX, y, 450, rowHeight).fillAndStroke("#f0f0f0", "black");
+
+      // Header text
+      doc.fillColor("black").font("Helvetica-Bold");
+      columns.forEach(col => {
+        doc.text(col.label, col.x + padding, y + padding, { width: col.width - 2*padding });
+      });
+
+      y += rowHeight;
+      doc.font("Helvetica");
+
+      // Table rows
+      expenses.forEach(e => {
+        doc.rect(tableStartX, y, 450, rowHeight).stroke();
+        const dateStr = e.date ? new Date(e.date).toLocaleDateString() : "-";
+        doc.text(dateStr, columns[0].x + padding, y + padding, { width: columns[0].width - 2*padding });
+        doc.text(e.description || "-", columns[1].x + padding, y + padding, { width: columns[1].width - 2*padding });
+        doc.text(Number(e.amount || 0).toFixed(2), columns[2].x + padding, y + padding, { width: columns[2].width - 2*padding });
+        y += rowHeight;
+      });
+
+      const total = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      y += 10; // extra space before total
+      doc.font("Helvetica-Bold").text(`Total: Rs. ${total.toFixed(2)}`, tableStartX, y, { align: "left" });
+
+    } else {
+      // Admin
+      doc.fontSize(12).text(`Admin Email: ${userEmail}`, { align: "left" });
+      doc.moveDown(0.5);
+      y = doc.y;
+
+      // Aggregate totals by student
+      const totals = {};
+      expenses.forEach(e => {
+        totals[e.studentid] = (totals[e.studentid] || 0) + (Number(e.amount) || 0);
+      });
+      const sortedIds = Object.keys(totals).sort();
+
+      // Table header
+      const columns = [
+        { label: "Roll No", x: 50, width: 200 },
+        { label: "Total (Rs.)", x: 250, width: 200 },
+      ];
+
+      // Draw header background
+      doc.rect(tableStartX, y, 400, rowHeight).fillAndStroke("#f0f0f0", "black");
+
+      // Header text
+      doc.fillColor("black").font("Helvetica-Bold");
+      columns.forEach(col => {
+        doc.text(col.label, col.x + padding, y + padding, { width: col.width - 2*padding });
+      });
+
+      y += rowHeight;
+      doc.font("Helvetica");
+
+      // Table rows
+      sortedIds.forEach(id => {
+        doc.rect(tableStartX, y, 400, rowHeight).stroke();
+        doc.text(id, columns[0].x + padding, y + padding, { width: columns[0].width - 2*padding });
+        doc.text(totals[id].toFixed(2), columns[1].x + padding, y + padding, { width: columns[1].width - 2*padding });
+        y += rowHeight;
+      });
+
+      const grandTotal = Object.values(totals).reduce((sum, amt) => sum + amt, 0);
+      y += 10; // extra space before grand total
+      doc.font("Helvetica-Bold").text(`Grand Total: Rs. ${grandTotal.toFixed(2)}`, tableStartX, y, { align: "left" });
+    }
+
+    doc.end();
+  } catch (err) {
+    console.error("PDF generation error:", err);
+    if (!res.headersSent) res.status(500).json({ message: "Failed to generate PDF" });
+  }
+};
+
 //         status: 0,
 //         message: "Unauthorized access",
 //       });

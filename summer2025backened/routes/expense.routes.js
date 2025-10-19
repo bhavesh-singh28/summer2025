@@ -1,5 +1,5 @@
 import express from "express";
-import { createExpense, getRecentExpenses } from "../controllers/expenseController.js";
+import { createExpense, getRecentExpenses, downloadMonthlyExpensesPDF } from "../controllers/expenseController.js";
 import { verifyToken } from "../middleware/auth.js";
 const router = express.Router();
 
@@ -11,5 +11,7 @@ router.get("/transactions", verifyToken, getRecentExpenses);
 
 // Get expenses for a specific student
 router.get("/transactions/:studentid", verifyToken, getRecentExpenses);
+
+router.get("/download-pdf", verifyToken, downloadMonthlyExpensesPDF);
 
 export default router;

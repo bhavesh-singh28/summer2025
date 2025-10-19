@@ -27,32 +27,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ✅ Check token validity once when app loads
-  useEffect(() => {
-    const verifyToken = async () => {
-      const token = localStorage.getItem("token");
-      const savedUser = localStorage.getItem("user");
+  // useEffect(() => {
+  //   const verifyToken = async () => {
+  //     const token = localStorage.getItem("token");
+  //     const savedUser = localStorage.getItem("user");
 
-      if (!token || !savedUser) {
-        logout();
-        return;
-      }
+  //     if (!token || !savedUser) {
+  //       logout();
+  //       return;
+  //     }
 
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/verifyToken`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  //     try {
+  //       const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/verifyToken`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
 
-        if (res.message != "Token is valid") {
-          logout();
-        }
-      } catch (err) {
-        // token invalid or expired
-        logout();
-      }
-    };
+  //       if (res.message != "Token is valid") {
+  //         logout();
+  //       }
+  //     } catch (err) {
+  //       // token invalid or expired
+  //       logout();
+  //     }
+  //   };
 
-    verifyToken();
-  }, []);
+  //   verifyToken();
+  // }, []);
 
   const isLoggedIn = !!user;
 
