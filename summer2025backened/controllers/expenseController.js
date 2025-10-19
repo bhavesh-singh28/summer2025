@@ -236,7 +236,7 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
 
     } else {
       // Admin
-      doc.fontSize(12).text(`Admin Email: ${userEmail}`, { align: "left" });
+      doc.fontSize(12).text(`Role: ${role.charAt(0).toUpperCase() + role.slice(1)}`, { align: "left" });
       doc.moveDown(0.5);
       y = doc.y;
 
