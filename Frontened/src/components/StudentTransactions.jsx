@@ -9,8 +9,6 @@ import {
   DollarSign,
 } from "lucide-react";
 import axios from "../api/axiosConfig";
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import PaginationControls from "./common/PaginationControls";
 import MonthDropdownButton from "./common/MonthDropdownButton";
 const StudentTransactions = () => {
@@ -21,7 +19,7 @@ const StudentTransactions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all"); // all, mess, canteen
   const [dateFilter, setDateFilter] = useState("all"); // all, today, week, month
-  const [showPdfOptions, setShowPdfOptions] = useState(false);
+  // const [showPdfOptions, setShowPdfOptions] = useState(false); // removed - server handles PDF
 
   // server pagination state
   const [page, setPage] = useState(1);
@@ -200,122 +198,34 @@ const StudentTransactions = () => {
     );
   };
 
-const downloadPDF = () => {
-  // --- 1. Data Aggregation (No changes here) ---
-  const monthlyTotals = filteredTransactions.reduce((acc, transaction) => {
-    if (!transaction.studentid) {
-      return acc;
+
+const handleDownloadForMonth = async (monthValue) => {
+    try {
+      const token = localStorage.getItem("token");
+      const url = `${import.meta.env.VITE_BACKEND_URL}/expense/download-pdf?month=${monthValue}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        alert("Failed to download PDF");
+        return;
+      }
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `student-expenses-summary-${monthValue}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      alert("Error downloading PDF");
     }
-    const date = new Date(transaction.date);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const key = `${transaction.studentid}_${monthKey}`;
-    if (!acc[key]) {
-      acc[key] = {
-        studentid: transaction.studentid,
-        typeName: transaction.typeName || "N/A",
-        amount: 0,
-        month: monthKey,
-      };
-    }
-    acc[key].amount += transaction.amount || 0;
-    return acc;
-  }, {});
-
-  const aggregatedData = Object.values(monthlyTotals);
-
-  // --- 2. PDF Generation ---
-  const doc = new jsPDF();
-  const tableColumn = ["Student ID", "Type", "Month", "Total Amount"];
-  
-  const tableRows = aggregatedData.map(data => [
-    data.studentid,
-    data.typeName,
-    data.month,
-    // **FIXED LINE**: Changed the Rupee symbol to "Rs." for proper rendering and alignment
-    `Rs. ${data.amount.toFixed(2)}`,
-  ]);
-
-  // Add a styled header
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text("Monthly Student Transaction Totals", 14, 22);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Report Generated: ${new Date().toLocaleDateString()}`, 14, 29);
-
-  // Use autoTable with styling options
-  autoTable(doc, {
-    head: [tableColumn],
-    body: tableRows,
-    startY: 35,
-    theme: 'grid',
-    headStyles: {
-      fillColor: [41, 128, 185],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-    },
-    alternateRowStyles: {
-      fillColor: [245, 249, 252],
-    },
-    columnStyles: {
-      3: { halign: 'right' }, // This will now work correctly
-    },
-    didDrawPage: function (data) {
-      const pageCount = doc.internal.getNumberOfPages();
-      doc.setFontSize(10);
-      doc.text(
-        'Page ' + data.pageNumber + ' of ' + pageCount,
-        data.settings.margin.left,
-        doc.internal.pageSize.height - 10
-      );
-    },
-  });
-
-  // --- 3. Save the PDF ---
-  doc.save(`monthly_student_totals_${new Date().toISOString().split("T")[0]}.pdf`);
-};
-
-const downloadPDFForMonth = (monthValue) => {
-  // Filter transactions by monthValue (YYYY-MM)
-  const filtered = transactions.filter((t) => {
-    const d = new Date(t.date);
-    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    return ym === monthValue;
-  });
-
-  if (!filtered.length) {
-    alert('No transactions found for the selected month.');
-    setShowPdfOptions(false);
-    return;
-  }
-
-  // Aggregate totals per student
-  const totals = filtered.reduce((acc, cur) => {
-    const id = (cur.studentid || 'UNKNOWN').toString().toUpperCase();
-    const amt = parseFloat(cur.amount) || 0;
-    acc[id] = (acc[id] || 0) + amt;
-    return acc;
-  }, {});
-
-  const rows = Object.keys(totals).map((id) => [id, `Rs. ${totals[id].toFixed(2)}`]);
-
-  const doc = new jsPDF();
-  doc.setFontSize(16);
-  doc.text('Monthly Student Totals', 14, 20);
-  doc.setFontSize(10);
-  doc.text(`Month: ${monthValue}`, 14, 26);
-  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 32);
-
-  autoTable(doc, {
-    head: [['Student ID', 'Total Amount']],
-    body: rows,
-    startY: 38,
-    theme: 'grid',
-  });
-
-  doc.save(`student_totals_${monthValue}.pdf`);
-  setShowPdfOptions(false);
-};
+  };
 
   if (loading) {
     return (
@@ -372,7 +282,7 @@ const downloadPDFForMonth = (monthValue) => {
           buttonIcon={<Download className="w-4 h-4" />}
           monthsCount={12}
           align="right"
-          onSelectMonth={(value) => downloadPDFForMonth(value)}
+          onSelectMonth={(value) => handleDownloadForMonth(value)}
         />
       </div>
 

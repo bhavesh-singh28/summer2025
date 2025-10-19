@@ -191,44 +191,52 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
     doc.fontSize(12).text(`Month: ${month}`, { align: "center" });
     doc.moveDown(1);
 
-    const tableStartX = 50;
-    const rowHeight = 20;
-    const padding = 5;
-    let y = doc.y;
+  const tableStartX = 50;
+  const rowHeight = 20;
+  const padding = 5;
+  let y = doc.y;
+  const bottomY = () => doc.page.height - doc.page.margins.bottom;
 
     if (role === "student") {
       doc.fontSize(12).text(`Roll No: ${student.studentid}`, { align: "left" });
       doc.moveDown(0.5);
       y = doc.y;
 
-      // Table header
+      // Table columns and header drawer
       const columns = [
         { label: "Date", x: 50, width: 100 },
         { label: "Description", x: 150, width: 250 },
         { label: "Amount (Rs.)", x: 400, width: 100 },
       ];
 
-      // Draw header background
-      doc.rect(tableStartX, y, 450, rowHeight).fillAndStroke("#f0f0f0", "black");
+      const drawStudentHeader = () => {
+        let yh = doc.y;
+        doc.rect(tableStartX, yh, 450, rowHeight).fillAndStroke("#f0f0f0", "black");
+        doc.fillColor("black").font("Helvetica-Bold");
+        columns.forEach((col) => {
+          doc.text(col.label, col.x + padding, yh + padding, { width: col.width - 2 * padding });
+        });
+        yh += rowHeight;
+        doc.font("Helvetica");
+        return yh;
+      };
 
-      // Header text
-      doc.fillColor("black").font("Helvetica-Bold");
-      columns.forEach(col => {
-        doc.text(col.label, col.x + padding, y + padding, { width: col.width - 2*padding });
-      });
+      // Draw initial header
+      y = drawStudentHeader();
 
-      y += rowHeight;
-      doc.font("Helvetica");
-
-      // Table rows
-      expenses.forEach(e => {
+      // Table rows with page-break handling
+      for (const e of expenses) {
+        if (y + rowHeight > bottomY()) {
+          doc.addPage();
+          y = drawStudentHeader();
+        }
         doc.rect(tableStartX, y, 450, rowHeight).stroke();
         const dateStr = e.date ? new Date(e.date).toLocaleDateString() : "-";
-        doc.text(dateStr, columns[0].x + padding, y + padding, { width: columns[0].width - 2*padding });
-        doc.text(e.description || "-", columns[1].x + padding, y + padding, { width: columns[1].width - 2*padding });
-        doc.text(Number(e.amount || 0).toFixed(2), columns[2].x + padding, y + padding, { width: columns[2].width - 2*padding });
+        doc.text(dateStr, columns[0].x + padding, y + padding, { width: columns[0].width - 2 * padding });
+        doc.text(e.description || "-", columns[1].x + padding, y + padding, { width: columns[1].width - 2 * padding });
+        doc.text(Number(e.amount || 0).toFixed(2), columns[2].x + padding, y + padding, { width: columns[2].width - 2 * padding });
         y += rowHeight;
-      });
+      }
 
       const total = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
       y += 10; // extra space before total
@@ -242,38 +250,49 @@ export const downloadMonthlyExpensesPDF = async (req, res) => {
 
       // Aggregate totals by student
       const totals = {};
-      expenses.forEach(e => {
+      expenses.forEach((e) => {
         totals[e.studentid] = (totals[e.studentid] || 0) + (Number(e.amount) || 0);
       });
       const sortedIds = Object.keys(totals).sort();
 
-      // Table header
+      // Table columns and header drawer
       const columns = [
         { label: "Roll No", x: 50, width: 200 },
         { label: "Total (Rs.)", x: 250, width: 200 },
       ];
 
-      // Draw header background
-      doc.rect(tableStartX, y, 400, rowHeight).fillAndStroke("#f0f0f0", "black");
+      const drawAdminHeader = () => {
+        let yh = doc.y;
+        doc.rect(tableStartX, yh, 400, rowHeight).fillAndStroke("#f0f0f0", "black");
+        doc.fillColor("black").font("Helvetica-Bold");
+        columns.forEach((col) => {
+          doc.text(col.label, col.x + padding, yh + padding, { width: col.width - 2 * padding });
+        });
+        yh += rowHeight;
+        doc.font("Helvetica");
+        return yh;
+      };
 
-      // Header text
-      doc.fillColor("black").font("Helvetica-Bold");
-      columns.forEach(col => {
-        doc.text(col.label, col.x + padding, y + padding, { width: col.width - 2*padding });
-      });
+      // Draw initial header
+      y = drawAdminHeader();
 
-      y += rowHeight;
-      doc.font("Helvetica");
-
-      // Table rows
-      sortedIds.forEach(id => {
+      // Table rows with page-break handling
+      for (const id of sortedIds) {
+        if (y + rowHeight > bottomY()) {
+          doc.addPage();
+          y = drawAdminHeader();
+        }
         doc.rect(tableStartX, y, 400, rowHeight).stroke();
-        doc.text(id, columns[0].x + padding, y + padding, { width: columns[0].width - 2*padding });
-        doc.text(totals[id].toFixed(2), columns[1].x + padding, y + padding, { width: columns[1].width - 2*padding });
+        doc.text(id, columns[0].x + padding, y + padding, { width: columns[0].width - 2 * padding });
+        doc.text(totals[id].toFixed(2), columns[1].x + padding, y + padding, { width: columns[1].width - 2 * padding });
         y += rowHeight;
-      });
+      }
 
       const grandTotal = Object.values(totals).reduce((sum, amt) => sum + amt, 0);
+      if (y + rowHeight > bottomY()) {
+        doc.addPage();
+        y = drawAdminHeader();
+      }
       y += 10; // extra space before grand total
       doc.font("Helvetica-Bold").text(`Grand Total: Rs. ${grandTotal.toFixed(2)}`, tableStartX, y, { align: "left" });
     }
