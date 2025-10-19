@@ -1,3 +1,4 @@
+// Student Portal
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import StudentLayout from "../../StudentLayouts/StudentLayout";
@@ -8,6 +9,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import StudentSettings from "../../Students/Settings/StudentSettings";
 import defaultpic from "../../../assets/ProfilePic.png";
+import PaginationControls from "../../common/PaginationControls";
 
 // ----- Student Menu -----
 const StudentMenu = () => {
@@ -145,6 +147,12 @@ const StudentExpenses = () => {
   const [showExportMonths, setShowExportMonths] = useState(false);
   const exportRef = useRef(null);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+
   const getLastMonths = (count = 12) => {
     const months = [];
     const now = new Date();
@@ -202,18 +210,21 @@ const StudentExpenses = () => {
   }, []);
 
   useEffect(() => {
-  const fetchExpenses = async () => {
+  const fetchExpenses = async (pageArg = 1, limitArg = 10) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication token not found.");
       if (!student?._id) return; // Wait for studentid
      
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/expense/transactions/${student._id}`, {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/expense/transactions/${student._id}?page=${pageArg}&limit=${limitArg}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("Student expenses API response:", response.data);
       if (response.data.status === 1 && Array.isArray(response.data.data)) {
         setExpenses(response.data.data);
+        setTotalPages(response.data.totalPages || 1);
+        setTotalRecords(response.data.totalRecords ?? response.data.data.length);
+        if (response.data.limit) setLimit(response.data.limit);
       } else {
         throw new Error("Invalid response format");
       }
@@ -225,8 +236,8 @@ const StudentExpenses = () => {
     }
   };
 
-  if (student?.studentid) fetchExpenses();
-}, [student]);
+  if (student?.studentid) fetchExpenses(page, limit);
+}, [student, page, limit]);
 
   if (loading)
     return (
@@ -399,6 +410,15 @@ const StudentExpenses = () => {
               ))
             )}
           </div>
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            totalRecords={totalRecords}
+            limit={limit}
+            setPage={setPage}
+            setLimit={setLimit}
+            pageSizeOptions={[5, 10, 20]}
+          />
         </div>
       </div>
     </div>

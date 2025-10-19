@@ -1,3 +1,4 @@
+// Super admin portal
 import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
@@ -10,6 +11,7 @@ import {
 import axios from "../api/axiosConfig";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import PaginationControls from "./common/PaginationControls";
 const StudentTransactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -19,6 +21,12 @@ const StudentTransactions = () => {
   const [filterType, setFilterType] = useState("all"); // all, mess, canteen
   const [dateFilter, setDateFilter] = useState("all"); // all, today, week, month
   const [showPdfOptions, setShowPdfOptions] = useState(false);
+
+  // server pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   // helper: last 12 months
   const getLastMonths = (count = 12) => {
@@ -48,48 +56,32 @@ const StudentTransactions = () => {
   }, [showPdfOptions]);
 
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    fetchTransactions(page, limit);
+  }, [page, limit]);
 
   useEffect(() => {
     filterTransactions();
   }, [transactions, searchTerm, filterType, dateFilter]);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (pageArg = 1, limitArg = 10) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const role = user?.role;
+  const personalId = user?.studentDetails?._id || localStorage.getItem("studentPersonalId");
 
-      // First, test basic connectivity
-      try {
-        console.log("🧪 Testing server connectivity...");
-  console.log("API GET:", "/api/server-test");
-  const serverTestResponse = await axios.get("/api/server-test");
-        console.log("✅ Server test response:", serverTestResponse.data);
+      // Build mess transactions URL based on role
+      const basePath = "/expense/transactions";
+      const isPrivileged = role === "superadmin" || role === "messadmin";
+      const url = isPrivileged
+        ? `${basePath}?page=${pageArg}&limit=${limitArg}`
+        : personalId
+          ? `${basePath}/${personalId}?page=${pageArg}&limit=${limitArg}`
+          : `${basePath}?page=${pageArg}&limit=${limitArg}`; // fallback
 
-        console.log("🧪 Testing mess staff route connectivity...");
-  console.log("API GET:", "/api/mess-staff/test");
-  const testResponse = await axios.get("/api/mess-staff/test");
-        console.log("✅ Test route response:", testResponse.data);
-
-        // Test transactions route without auth
-        console.log("API GET:", "/api/expense/transactions");
-        const transactionsTestResponse = await axios.get(
-          "/api/expense/transactions"
-        );
-        console.log(
-          "✅ Transactions test route response:",
-          transactionsTestResponse.data
-        );
-      } catch (testErr) {
-        console.log("❌ Test route failed:", testErr.response?.status);
-        console.log("❌ Test route error:", testErr.message);
-        console.log("❌ Full test error:", testErr);
-      }
-
-      // Fetch mess transactions
-  console.log("API GET:", "/api/expense/transactions");
-  const messResponse = await axios.get("/expense/transactions", {
+      const messResponse = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -128,10 +120,14 @@ const StudentTransactions = () => {
       //   allTransactions = [...allTransactions, ...canteenTransactions];
       // }
 
-      // Sort by date (newest first)
+      // Sort by date (newest first) - server already sorts, but keep client-side safety
       allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
       setTransactions(allTransactions);
+      // set pagination details if provided by server
+      if (messResponse.data?.totalPages) setTotalPages(messResponse.data.totalPages);
+      if (messResponse.data?.totalRecords !== undefined) setTotalRecords(messResponse.data.totalRecords);
+      if (messResponse.data?.limit) setLimit(messResponse.data.limit);
     } catch (err) {
       console.error("Failed to fetch transactions:", err);
 
@@ -146,7 +142,7 @@ const StudentTransactions = () => {
         setError("Transactions endpoint not found. Please contact support.");
       } else if (err.code === "ECONNREFUSED" || !err.response) {
         setError(
-          "Cannot connect to server. Please make sure the backend is running on port 5000."
+          "Cannot connect to server. Please make sure the backend is running."
         );
       } else {
         setError("Failed to load transactions. Please try again later.");
@@ -622,6 +618,16 @@ const downloadPDFForMonth = (monthValue) => {
             </tbody>
           </table>
         </div>
+        {/* Pagination controls */}
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalRecords={totalRecords}
+          limit={limit}
+          setPage={setPage}
+          setLimit={setLimit}
+          pageSizeOptions={[10, 20, 50]}
+        />
       </div>
     </div>
   );

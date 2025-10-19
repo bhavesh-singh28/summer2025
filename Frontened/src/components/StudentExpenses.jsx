@@ -1,6 +1,8 @@
+// Mess-Admin Portal
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Plus, Search, DollarSign, User, Receipt } from "lucide-react";
+import PaginationControls from "./common/PaginationControls";
 
 const StudentExpenses = () => {
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
@@ -14,6 +16,12 @@ const StudentExpenses = () => {
   const [showDescriptionSuggestions, setShowDescriptionSuggestions] = useState(false);
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Minimal pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   const amountSuggestions = [
     { label: "Regular Meal ₹48", value: 48, description: "Regular Meal" },
@@ -112,12 +120,14 @@ const StudentExpenses = () => {
     const fetchRecentExpenses = async () => {
       try {
         const token = localStorage.getItem("token");
-  console.log("API GET:", "/api/expense/transactions");
-  const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/expense/transactions`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/expense/transactions?page=${page}&limit=${limit}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         const fetchedExpenses = response.data?.data || [];
 
@@ -130,13 +140,15 @@ const StudentExpenses = () => {
         }));
 
         setRecentExpenses(formattedExpenses);
+        if (response.data?.totalPages) setTotalPages(response.data.totalPages);
+        if (response.data?.totalRecords !== undefined) setTotalRecords(response.data.totalRecords);
       } catch (error) {
         console.error("Failed to fetch expenses:", error);
       }
     };
 
     fetchRecentExpenses();
-  }, []);
+  }, [page, limit]);
 
   const filteredExpenses = recentExpenses.filter(
     (expense) =>
@@ -463,6 +475,15 @@ const StudentExpenses = () => {
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalRecords={totalRecords}
+          limit={limit}
+          setPage={setPage}
+          setLimit={setLimit}
+          pageSizeOptions={[10, 20, 50, 100]}
+        />
       </div>
     </div>
   );
