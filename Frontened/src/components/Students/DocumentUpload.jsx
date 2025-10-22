@@ -12,6 +12,8 @@ import {
   CreditCard,
   CheckCircle,
 } from "lucide-react";
+import imageCompression from "browser-image-compression";
+
 
 const DocumentUpload = ({ data, updateData, onPrev }) => {
   const [uploadedFiles, setUploadedFiles] = useState(() => {
@@ -108,22 +110,63 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     }
   };
 
-  const handleFile = (file, docType) => {
-    // reset errors for this docType
-    setErrors((e) => ({ ...e, [docType]: null }));
+const handleFile = async (file, docType) => {
+  setErrors((e) => ({ ...e, [docType]: null }));
 
-    if (!acceptedFileTypes.includes(file.type)) {
-      setErrors((e) => ({ ...e, [docType]: `File "${file.name}" is not a valid image type. Only PNG and JPG are supported.` }));
+  if (!acceptedFileTypes.includes(file.type)) {
+    setErrors((e) => ({
+      ...e,
+      [docType]: `File "${file.name}" is not a valid image type. Only PNG and JPG are supported.`,
+    }));
+    return;
+  }
+
+  const maxSizeKB = 200;
+  const minSizeKB = 50;
+
+  let finalFile = file;
+
+  // Compress only if >200KB
+  if (file.size > maxSizeKB * 1024) {
+    try {
+      const compressedFile = await imageCompression(file, {
+        maxSizeMB: 0.2, // 200 KB upper limit
+        maxWidthOrHeight: 1280, // keep good resolution
+        useWebWorker: true,
+      });
+
+      console.log(
+        `Compressed ${file.name} from ${(file.size / 1024).toFixed(1)} KB → ${(compressedFile.size / 1024).toFixed(1)} KB`
+      );
+
+      finalFile = compressedFile;
+    } catch (err) {
+      console.error("Compression error:", err);
+      setErrors((e) => ({
+        ...e,
+        [docType]: "Failed to compress image. Please try again.",
+      }));
       return;
     }
-    if (file.size > maxFileSize) {
-      setErrors((e) => ({ ...e, [docType]: `File is too large. Maximum size is 10MB` }));
-      return;
-    }
+  }
 
-    const newFiles = { ...uploadedFiles, [docType]: file };
-    setUploadedFiles(newFiles);
-  };
+  const finalSizeKB = finalFile.size / 1024;
+
+  // Reject if below 50KB or above 200KB even after compression
+  if (finalSizeKB < minSizeKB || finalSizeKB > maxSizeKB) {
+    setErrors((e) => ({
+      ...e,
+      [docType]: `File "${file.name}" must be between 50KB and 200KB (current: ${finalSizeKB.toFixed(
+        1
+      )}KB). Please resize or choose another image.`,
+    }));
+    return;
+  }
+
+  const newFiles = { ...uploadedFiles, [docType]: finalFile };
+  setUploadedFiles(newFiles);
+};
+
 
   const removeDocument = (docType) => {
     const newFiles = { ...uploadedFiles };
@@ -243,20 +286,32 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-10">
-        {generalError && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">{generalError}</div>}
-        {generalSuccess && <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">{generalSuccess}</div>}
-        <div className="w-24 h-24 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-          <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center">
-            <Upload className="w-8 h-8 text-white" />
-          </div>
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">
-          Upload Required Documents
-        </h2>
-        <p className="text-lg text-gray-600">
-          Upload your documents to complete the registration process
-        </p>
-      </div>
+  {generalError && (
+    <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
+      {generalError}
+    </div>
+  )}
+  {generalSuccess && (
+    <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
+      {generalSuccess}
+    </div>
+  )}
+  <div className="w-24 h-24 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+    <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center">
+      <Upload className="w-8 h-8 text-white" />
+    </div>
+  </div>
+  <h2 className="text-3xl font-bold text-gray-900 mb-3">
+    Upload Required Documents
+  </h2>
+  <p className="text-lg text-gray-600">
+    Upload your documents to complete the registration process.
+  </p>
+  <p className="text-sm text-gray-500 mt-2">
+    <strong>Note:</strong> Only <span className="text-orange-600 font-semibold">PNG</span> or <span className="text-orange-600 font-semibold">JPG</span> files are allowed, and each image must be between <span className="font-semibold">50KB–200KB</span>.
+  </p>
+</div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {requiredDocuments.map((doc) => {
