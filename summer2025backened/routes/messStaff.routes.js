@@ -30,10 +30,10 @@ router.get("/transactions-test", (req, res) => {
   });
 });
 
-router.get("/", verifyToken, getMessStaff);
-router.post("/", verifyToken, addMessStaff); // ✅ Add new mess staff
-router.put("/:id", verifyToken, updateMessStaff);
-router.delete("/:id", verifyToken, deleteMessStaff);
+router.get("/", verifyToken, restrictTo("superadmin"), getMessStaff);
+router.post("/", verifyToken, restrictTo("superadmin"), addMessStaff); // ✅ Add new mess staff
+router.put("/:id", verifyToken, restrictTo("superadmin"), updateMessStaff);
+router.delete("/:id", verifyToken, restrictTo("superadmin"), deleteMessStaff);
 router.get("/stats", verifyToken, transactionStats);
 
 router.post(

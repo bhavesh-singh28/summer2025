@@ -11,6 +11,7 @@ export default function MessManagement() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     fetchStaff();
@@ -18,7 +19,11 @@ export default function MessManagement() {
 
   const fetchStaff = async () => {
     try {
-      const res = await axios.get('/mess-staff');
+      const res = await axios.get('/mess-staff', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setStaffList(res.data);
     } catch (err) {
       console.error('Failed to fetch mess staff:', err);
@@ -37,7 +42,12 @@ export default function MessManagement() {
     setSuccess('');
 
     try {
-      const res = await axios.post('/mess-staff/', newStaff);
+      const res = await axios.post('/mess-staff/', newStaff, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setStaffList([...staffList, res.data]);
       setSuccess(`Staff member "${newStaff.name}" added successfully!`);
       setNewStaff({ name: '', mobile: '', email: '' });
@@ -62,7 +72,11 @@ export default function MessManagement() {
 
   const handleSave = async (id) => {
     try {
-      const res = await axios.put(`/mess-staff/${id}`, editedData);
+      const res = await axios.put(`/mess-staff/${id}`
+        , {
+          headers: { 'Content-Type': 'application/json' },
+          Authorization: `Bearer ${token}`,
+        }, editedData);
       setStaffList(staffList.map(staff => (staff._id === id ? res.data : staff)));
       setEditingId(null);
     } catch (err) {
@@ -78,7 +92,12 @@ export default function MessManagement() {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this staff member?')) {
       try {
-        await axios.delete(`/mess-staff/${id}`);
+        await axios.delete(`/mess-staff/${id}`,
+          {
+            headers: { 'Content-Type': 'application/json' },
+            Authorization: `Bearer ${token}`,
+          }
+        );
         setStaffList(staffList.filter(staff => staff._id !== id));
       } catch (err) {
         console.error('Failed to delete mess staff:', err);
