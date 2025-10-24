@@ -21,13 +21,6 @@ import cron from "node-cron";
 dotenv.config();
 const app = express();
 
-
-cron.schedule("0 0 * * *", () => {
-
-  console.log("🌙 Running midnight reset...");
-  resetAllStats();
-});
-
 // Get directory name for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,7 +39,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/notices", noticeRoutes);
 app.use("/api/mess-staff", messStaffRoutes);
 app.use("/api/expense", expenseRoutes);
-app.use("/api/canteen-staff", canteenStaffRoutes);
+// app.use("/api/canteen-staff", canteenStaffRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/menu", menuRoutes);

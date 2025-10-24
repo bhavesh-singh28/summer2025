@@ -176,7 +176,6 @@ const StudentExpenses = () => {
         const match = res.data.personaldetailList.find(
           (p) => p._id === loggedInStudentId
         );
-        console.log("Matched student details:", match);
         if (match) {
           setStudent(match);
         }
@@ -198,7 +197,6 @@ const StudentExpenses = () => {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/expense/transactions/${student._id}?page=${pageArg}&limit=${limitArg}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Student expenses API response:", response.data);
       if (response.data.status === 1 && Array.isArray(response.data.data)) {
         setExpenses(response.data.data);
         setTotalPages(response.data.totalPages || 1);
@@ -390,7 +388,6 @@ const StudentNotifications = () => {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    console.log("Notices API response:", response.data);
 
     let data = [];
 

@@ -135,10 +135,6 @@ const handleFile = async (file, docType) => {
         useWebWorker: true,
       });
 
-      console.log(
-        `Compressed ${file.name} from ${(file.size / 1024).toFixed(1)} KB → ${(compressedFile.size / 1024).toFixed(1)} KB`
-      );
-
       finalFile = compressedFile;
     } catch (err) {
       console.error("Compression error:", err);

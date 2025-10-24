@@ -93,7 +93,12 @@ export const resendVerificationCode = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password, role } = req.body;
-  console.log("Login request received:", { email, role });
+  const roleOptions = ["student", "messadmin", "canteenStaff", "superadmin"];
+
+  // Validate role
+  if (!roleOptions.includes(role)) {
+    return res.status(400).json({ error: "Invalid role specified" });
+  }
 
   if (!email || !password || !role) {
     return res.status(400).json({ error: "Email, password, and role are required" });
@@ -142,7 +147,12 @@ export const login = async (req, res) => {
 export const signup = async (req, res) => {
   try {
     const { email, password, role } = req.body;
+    const roleOptions = ["student", "messadmin", "canteenStaff", "superadmin"];
 
+    // Validate role
+    if (!roleOptions.includes(role)) {
+      return res.status(400).json({ error: "Invalid role specified" });
+    }
     // Validation
     if (!email || !password || !role) {
       return res.status(400).json({ error: "Email, password, and role are required" });
@@ -185,7 +195,7 @@ export const getMe = async (req, res) => {
     res.json({
       email: user.email,
       role: user.role,
-      qrToken: user.qrToken || ""
+      qrToken: user.qrToken || "Try Again Letter"
     });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
