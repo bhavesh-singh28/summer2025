@@ -155,7 +155,7 @@ export default function AdminLayout() {
 
             <img src="/PU_Logo.png" alt="PU Logo" className="h-10 sm:h-16 w-auto" />
             <h1 className="text-lg sm:text-2xl font-semibold text-gray-800 leading-tight">
-              Baba Banda Singh Bahadur Boys Hostel 8
+              Mehr Chand Mahajan Boys' Hostel Number 1
             </h1>
           </div>
 
