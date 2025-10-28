@@ -1,5 +1,8 @@
+import React from "react";
+import { AuthProvider } from "./context/AuthContext";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+
+// ===== Import Your Components =====
 import LandingPage from "./components/Pages/Landingpage/Landingpage";
 import NotFound from "./components/NotFound";
 import AdminRoutes from "./components/Pages/Adminroutesdef/Adminroutes";
@@ -8,11 +11,13 @@ import LoginHub from "./components/LoginHub";
 import AdminLogin from "./components/AdminLogin";
 import AdminLoginForm from "./components/AdminLoginForm";
 import LoginPage from "./LoginPage";
-import SignupFlow from "./Components/Students/SignupFlow";
 import StudentLogin from "./components/Students/StudentLogin";
 import StudentSignup from "./components/Students/StudentSignup";
 import MessAdminRoutes from "./components/Pages/Admin/MessAdminRoutes";
+import MaintenancePage from "./MaintenancePage";
 
+// ===== Main Routes =====
+import { useAuth } from "./context/AuthContext";
 
 const AppRoutes = () => {
   const { user, isLoggedIn } = useAuth();
@@ -39,8 +44,8 @@ const AppRoutes = () => {
           )
         }
       />
+
       <Route
-     
         path="/admin/*"
         element={
           isLoggedIn &&
@@ -53,15 +58,19 @@ const AppRoutes = () => {
           )
         }
       />
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
 
+// ===== Root App Component with Maintenance Mode =====
+const MAINTENANCE_MODE = false; // 🔧 Change to false to disable maintenance
+
 const App = () => {
   return (
     <AuthProvider>
-      <AppRoutes />
+      {MAINTENANCE_MODE ? <MaintenancePage /> : <AppRoutes />}
     </AuthProvider>
   );
 };

@@ -84,7 +84,7 @@ export default function CanteenAdminLayout() {
                 Canteen Management System
               </h1>
               <p className="text-sm text-purple-600 font-medium">
-                Baba Banda Singh Bahadur Boys Hostel 8
+                Mehr Chand Mahajan Boys' Hostel Number 1
               </p>
             </div>
           </div>

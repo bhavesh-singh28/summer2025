@@ -13,6 +13,9 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 export const sendVerificationCode = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
+   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Invalid email address" });
+    }
 
   // Use verifyStudentEmailForSignup to check eligibility before sending OTP
   const checkRes = await verifyStudentEmailForSignup({ body: { email } }, {
@@ -41,6 +44,9 @@ export const sendVerificationCode = async (req, res) => {
 export const verifySignupOtp = async (req, res) => {
   const { email, otp } = req.body;
   console.log("OTP verification request received:", { email, otp });
+   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Invalid email address" });
+    }
   if (!email || !otp) return res.status(400).json({ error: "Email and OTP required" });
 
   try {
@@ -75,6 +81,9 @@ export const verifySignupOtp = async (req, res) => {
 export const resendVerificationCode = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
+   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Invalid email address" });
+    }
 
   try {
     await Otp.deleteMany({ email });
@@ -108,7 +117,7 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email, role }).populate("studentDetails", "firstname lastname email phone  imageUrl");
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: "Invalid credentials/User Not Approved" });
     }
 
     const isMatch = await user.comparePassword(password);
