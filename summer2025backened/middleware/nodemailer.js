@@ -120,7 +120,7 @@ const sendLoginCredentials = async (to, fullName, email, password) => {
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="http://localhost:5173/login" 
+              <a href="https://trakzz.in/student-login" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; 
                         text-decoration: none; 
@@ -138,7 +138,7 @@ const sendLoginCredentials = async (to, fullName, email, password) => {
             <p style="color: #999; font-size: 14px; text-align: center; margin: 0;">
               If you have any questions or need assistance, please contact our support team.<br>
               <strong>Mess & Canteen Management System</strong><br>
-              📧 Email: support@messmanagement.com | 📞 Phone: +1 (555) 123-4567
+              📧 Email: pu.boyshostel1@gmail.com 
             </p>
           </div>
         </div>
@@ -155,7 +155,7 @@ Password: ${password}
 
 For your security, please change your password after your first login.
 
-Login URL: http://localhost:5173/login
+Login URL: https://trakzz.in/student-login
 
 Thank you,
 Mess & Canteen Management Team`,
@@ -168,6 +168,31 @@ Mess & Canteen Management Team`,
     throw error;
   }
 };
+const sendRejectionEmail = async (to, firstName, lastName) => {
+  try {
+    const mailOptions = {
+      from: process.env.GOOGLE_APP_EMAIL,
+      to,
+      subject: "Document Verification Rejected - Mess and Canteen Management System",
+      text: `Dear ${firstName} ${lastName},
+
+We regret to inform you that your document verification request has been rejected.
+
+Please review the documents you submitted and ensure they meet the required criteria. You may resubmit your Application for verification.
+
+If you have any questions or need further assistance, please contact our support team.
+
+Best regards,  
+Mess and Canteen Management Team`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log("Rejection email sent to", to);
+  } catch (error) {
+    console.error("Error sending rejection email:", error);
+    throw error;
+  }
+};
 
 // ✅ Export both functions
-export { studentsignup, sendOtpVerificationEmail, sendLoginCredentials };
+export { studentsignup, sendOtpVerificationEmail, sendLoginCredentials, sendRejectionEmail };

@@ -1,6 +1,6 @@
 import personaldetailModel from "../models/personaldetail.model.js";
 import User from "../models/user.model.js";
-import { sendLoginCredentials } from "../middleware/nodemailer.js";
+import { sendLoginCredentials , sendRejectionEmail} from "../middleware/nodemailer.js";
 import { generateReadablePassword } from "../utils/passwordGenerator.js";
 import bcrypt from "bcrypt";
 import cloudinary from "cloudinary";
@@ -41,18 +41,47 @@ export const personaldetailInsert = async (req, res) => {
       roomno,
       imageUrl,
     } = req.body;
-    console.log("Data received on server:", imageUrl);
+
+    if (!studentid || !email) {
+      return res.status(400).send({
+        status: 0,
+        message: "studentid and email are required",
+      });
+    }
+
     // Check if student already exists
     const existingStudent = await personaldetailModel.findOne({
       $or: [{ studentid }, { email }],
     });
+
     if (existingStudent) {
-      return res.status(400).send({
-        status: 0,
-        message: "Student with this ID or email already exists",
+      // ✅ Update existing student instead of rejecting
+      await personaldetailModel.updateOne(
+        { _id: existingStudent._id },
+        {
+          $set: {
+            firstname,
+            lastname,
+            phone,
+            DOB,
+            address,
+            city,
+            state,
+            zipcode,
+            hostelblock,
+            roomno,
+            imageUrl,
+          },
+        }
+      );
+
+      return res.status(200).send({
+        status: 1,
+        message: "Personal detail updated successfully",
       });
     }
 
+    // If not exists → create new
     const newDetail = new personaldetailModel({
       firstname,
       lastname,
@@ -76,21 +105,21 @@ export const personaldetailInsert = async (req, res) => {
       message: "Personal detail saved successfully",
     });
   } catch (err) {
-    // Handle duplicate key error
     if (err.code === 11000) {
       res.status(400).send({
         status: 0,
-        message: "Student with this ID or email already exists",
+        message: "Duplicate student ID or email",
       });
     } else {
       res.status(500).send({
         status: 0,
-        message: "Error while saving personal detail",
+        message: "Error while saving/updating personal detail",
         error: err.message,
       });
     }
   }
 };
+
 
 // Fetch all personal details
 export const personaldetailList = async (req, res) => {
@@ -275,8 +304,15 @@ export const verifyDocuments = async (req, res) => {
         );
         // Still return success for document verification even if email fails
       }
+    }else if(status === "rejected"){
+      // Send rejection email
+      try{
+        await sendRejectionEmail(student.email, student.firstname, student.lastname);
+        console.log(`Rejection email sent to ${student.email}`);
+      }catch(emailError){
+        console.error("Error sending rejection email:", emailError);
+      }
     }
-
     res.status(200).json({
       message: `Documents ${status} successfully`,
       emailSent: status === "approved" ? true : false,
@@ -363,14 +399,43 @@ export const uploadProfileImage = async (req, res) => {
 export const personaldetailExists = async (req, res) => {
   try {
     const { studentId } = req.params;
+
     if (!studentId) {
-      return res.status(400).json({ status: 0, message: "studentId param required" });
+      return res.status(400).json({
+        status: 0,
+        message: "studentId param required",
+      });
     }
 
     const student = await personaldetailModel.findOne({ studentid: studentId });
-    return res.status(200).json({ status: 1, exists: !!student });
+    
+    // 🔹 If student not found
+    if (!student) {
+      return res.status(200).json({
+        status: 1,
+        exists: false,
+      });
+    }
+
+    // 🔹 If found but not verified
+    if (student.documentsVerified === false) {
+      return res.status(200).json({
+        status: 1,
+        exists: true,
+      });
+    }
+
+    // 🔹 If found and verified
+    return res.status(200).json({
+      status: 1,
+      exists: true,
+    });
   } catch (error) {
     console.error("Error checking student existence:", error);
-    return res.status(500).json({ status: 0, message: "Server error", error: error.message });
+    return res.status(500).json({
+      status: 0,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
