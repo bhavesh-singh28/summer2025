@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import {
   Upload,
-  FileText, // Keeping FileText just in case, but it won't be used for accepted types
+  FileText,
   Image,
   X,
   Check,
@@ -10,10 +10,7 @@ import {
   UtensilsCrossed,
   GraduationCap,
   CreditCard,
-  CheckCircle,
 } from "lucide-react";
-import imageCompression from "browser-image-compression";
-
 
 const DocumentUpload = ({ data, updateData, onPrev }) => {
   const [uploadedFiles, setUploadedFiles] = useState(() => {
@@ -21,19 +18,16 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
       return data.documents.reduce((acc, doc) => {
         const requiredDoc = requiredDocuments.find(rd => rd.key === doc.type);
         if (requiredDoc) {
-          // Ensure that pre-loaded documents also adhere to the new type restriction
-          // This assumes the backend also enforces it, but for frontend consistency:
           if (doc.mimetype === "image/png" || doc.mimetype === "image/jpeg") {
             acc[requiredDoc.title] = {
               name: doc.originalName,
               type: doc.type,
-              mimetype: doc.mimetype, // Store mimetype for icon logic
+              mimetype: doc.mimetype,
               size: 0,
               url: doc.url
             };
           } else {
-             // Optionally, log a warning or filter out non-image documents
-             console.warn(`Pre-loaded document "${doc.originalName}" is not an allowed image type and will be ignored.`);
+            console.warn(`Pre-loaded document "${doc.originalName}" ignored (not PNG/JPG).`);
           }
         }
         return acc;
@@ -49,13 +43,11 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
   const [generalError, setGeneralError] = useState("");
   const [generalSuccess, setGeneralSuccess] = useState("");
 
-  // MODIFIED: Only allow image types
-  const acceptedFileTypes = [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-  ];
-  const maxFileSize = 10 * 1024 * 1024; // 10MB
+  // Accept only images
+  const acceptedFileTypes = ["image/jpeg", "image/jpg", "image/png"];
+  const maxFileSize = 10 * 1024 * 1024; // 10 MB
+  const minSizeKB = 50;
+  const maxSizeKB = 200;
 
   const requiredDocuments = [
     {
@@ -70,7 +62,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
       key: "hostelAllotmentLetter",
       title: "Hostel Allotment Letter",
       description: "Official hostel room allotment document (PNG or JPG)",
-      icon: FileText, // Keeping FileText icon, but content will be image
+      icon: FileText,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
@@ -110,70 +102,41 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     }
   };
 
-const handleFile = async (file, docType) => {
-  setErrors((e) => ({ ...e, [docType]: null }));
+  const handleFile = (file, docType) => {
+    setErrors(prev => ({ ...prev, [docType]: null }));
 
-  if (!acceptedFileTypes.includes(file.type)) {
-    setErrors((e) => ({
-      ...e,
-      [docType]: `File "${file.name}" is not a valid image type. Only PNG and JPG are supported.`,
-    }));
-    return;
-  }
-
-  const maxSizeKB = 200;
-  const minSizeKB = 50;
-
-  let finalFile = file;
-
-  // Compress only if >200KB
-  if (file.size > maxSizeKB * 1024) {
-    try {
-      const compressedFile = await imageCompression(file, {
-        maxSizeMB: 0.2, // 200 KB upper limit
-        maxWidthOrHeight: 1280, // keep good resolution
-        useWebWorker: true,
-      });
-
-      finalFile = compressedFile;
-    } catch (err) {
-      console.error("Compression error:", err);
-      setErrors((e) => ({
-        ...e,
-        [docType]: "Failed to compress image. Please try again.",
+    if (!acceptedFileTypes.includes(file.type)) {
+      setErrors(prev => ({
+        ...prev,
+        [docType]: `File "${file.name}" is not valid. Only PNG and JPG are allowed.`,
       }));
       return;
     }
-  }
 
-  const finalSizeKB = finalFile.size / 1024;
+    const sizeKB = file.size / 1024;
 
-  // Reject if below 50KB or above 200KB even after compression
-  if (finalSizeKB < minSizeKB || finalSizeKB > maxSizeKB) {
-    setErrors((e) => ({
-      ...e,
-      [docType]: `File "${file.name}" must be between 50KB and 200KB (current: ${finalSizeKB.toFixed(
-        1
-      )}KB). Please resize or choose another image.`,
-    }));
-    return;
-  }
+    if (sizeKB < minSizeKB || sizeKB > maxSizeKB) {
+      setErrors(prev => ({
+        ...prev,
+        [docType]: `File "${file.name}" must be between 50KB and 200KB (current: ${sizeKB.toFixed(
+          1
+        )}KB).`,
+      }));
+      return;
+    }
 
-  const newFiles = { ...uploadedFiles, [docType]: finalFile };
-  setUploadedFiles(newFiles);
-};
-
-
-  const removeDocument = (docType) => {
-    const newFiles = { ...uploadedFiles };
-    delete newFiles[docType];
-    setUploadedFiles(newFiles);
+    setUploadedFiles(prev => ({ ...prev, [docType]: file }));
   };
 
-  // MODIFIED: getFileIcon will now always return an Image icon
-  const getFileIcon = () => (
-    <Image className="w-8 h-8 text-orange-500" />
-  );
+  const removeDocument = (docType) => {
+    setUploadedFiles(prev => {
+      const newFiles = { ...prev };
+      delete newFiles[docType];
+      return newFiles;
+    });
+  };
+
+  const getFileIcon = () => <Image className="w-8 h-8 text-orange-500" />;
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return "0 Bytes";
@@ -188,6 +151,7 @@ const handleFile = async (file, docType) => {
   const handleSubmit = async () => {
     setGeneralError("");
     setGeneralSuccess("");
+
     if (!allDocumentsUploaded) {
       setGeneralError("Please upload all required documents to continue.");
       return;
@@ -211,8 +175,7 @@ const handleFile = async (file, docType) => {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-  setGeneralSuccess("Documents uploaded successfully!");
-      
+      setGeneralSuccess("Documents uploaded successfully!");
       const documentsWithUrls = {};
       response.data.documents.forEach((uploadedDoc) => {
         const originalDoc = requiredDocuments.find(rd => rd.key === uploadedDoc.type);
@@ -220,7 +183,7 @@ const handleFile = async (file, docType) => {
           documentsWithUrls[originalDoc.title] = {
             name: uploadedDoc.originalName,
             type: uploadedDoc.type,
-            mimetype: uploadedDoc.mimetype, // Make sure to store mimetype
+            mimetype: uploadedDoc.mimetype,
             size: 0,
             url: uploadedDoc.url
           };
@@ -253,28 +216,14 @@ const handleFile = async (file, docType) => {
           🎉 Welcome to PU FOOD HUB!
         </h2>
         <p className="text-xl text-gray-600 mb-8">
-          Your registration is complete! Get ready for an amazing dining
-          experience.
+          Your registration is complete! Get ready for an amazing dining experience.
         </p>
-        <div className="text-center text-gray-700">
-          <button className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600" onClick={() => {
-            window.location.href = "/";
-          }}
-          >
-            Go to HOME
-          </button>
-        </div>
-
-        <div className="mt-8 flex justify-center gap-4">
-          <div className="flex items-center gap-2 text-orange-600">
-            <UtensilsCrossed className="w-5 h-5" />
-            <span className="font-semibold">Fresh Meals Daily</span>
-          </div>
-          <div className="flex items-center gap-2 text-amber-600">
-            <span className="text-2xl">⭐</span>
-            <span className="font-semibold">Premium Quality</span>
-          </div>
-        </div>
+        <button
+          className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600"
+          onClick={() => (window.location.href = "/")}
+        >
+          Go to HOME
+        </button>
       </div>
     );
   }
@@ -282,44 +231,45 @@ const handleFile = async (file, docType) => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-10">
-  {generalError && (
-    <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
-      {generalError}
-    </div>
-  )}
-  {generalSuccess && (
-    <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
-      {generalSuccess}
-    </div>
-  )}
-  <div className="w-24 h-24 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-    <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center">
-      <Upload className="w-8 h-8 text-white" />
-    </div>
-  </div>
-  <h2 className="text-3xl font-bold text-gray-900 mb-3">
-    Upload Required Documents
-  </h2>
-  <p className="text-lg text-gray-600">
-    Upload your documents to complete the registration process.
-  </p>
-  <p className="text-sm text-gray-500 mt-2">
-    <strong>Note:</strong> Only <span className="text-orange-600 font-semibold">PNG</span> or <span className="text-orange-600 font-semibold">JPG</span> files are allowed, and each image must be between <span className="font-semibold">50KB–200KB</span>.
-  </p>
-</div>
-
+        {generalError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
+            {generalError}
+          </div>
+        )}
+        {generalSuccess && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
+            {generalSuccess}
+          </div>
+        )}
+        <div className="w-24 h-24 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+          <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center">
+            <Upload className="w-8 h-8 text-white" />
+          </div>
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 mb-3">
+          Upload Required Documents
+        </h2>
+        <p className="text-lg text-gray-600">
+          Upload your documents to complete the registration process.
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          <strong>Note:</strong> Only{" "}
+          <span className="text-orange-600 font-semibold">PNG</span> or{" "}
+          <span className="text-orange-600 font-semibold">JPG</span> files are allowed,
+          and each image must be between{" "}
+          <span className="font-semibold">50KB–200KB</span>.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {requiredDocuments.map((doc) => {
           const file = uploadedFiles[doc.title];
-          const Icon = doc.icon; // This icon will still render based on `requiredDocuments` definition
+          const Icon = doc.icon;
 
           return (
             <div
               key={doc.title}
-              className={`border rounded-2xl p-6 text-center transition-all ${
-                doc.bgColor
-              } ${
+              className={`border rounded-2xl p-6 text-center transition-all ${doc.bgColor} ${
                 dragActive === doc.title ? "transform scale-105 shadow-lg" : ""
               }`}
               onDragEnter={(e) => handleDrag(e, doc.title)}
@@ -335,12 +285,10 @@ const handleFile = async (file, docType) => {
               <h3 className="font-bold text-gray-900">{doc.title}</h3>
               <p className="text-sm text-gray-600 mb-4">{doc.description}</p>
 
-                {file ? (
+              {file ? (
                 <div className="flex items-center justify-between p-2 bg-white border rounded-lg shadow-sm">
                   <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 text-gray-500">
-                      {getFileIcon().props.children} {/* Always show image icon now */}
-                    </div>
+                    <Image className="w-6 h-6 text-orange-500" />
                     <div>
                       <p className="font-semibold text-gray-700 text-xs truncate max-w-28">
                         {file.name}
@@ -364,12 +312,14 @@ const handleFile = async (file, docType) => {
                     type="file"
                     onChange={(e) => handleChange(e, doc.title)}
                     className="hidden"
-                    // MODIFIED: Only accept image file extensions
                     accept=".png, .jpg, .jpeg"
                   />
                 </label>
               )}
-              {errors[doc.title] && <p className="text-red-600 text-sm mt-2">{errors[doc.title]}</p>}
+
+              {errors[doc.title] && (
+                <p className="text-red-600 text-sm mt-2">{errors[doc.title]}</p>
+              )}
             </div>
           );
         })}
