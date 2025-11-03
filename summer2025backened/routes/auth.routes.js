@@ -18,6 +18,8 @@ router.get("/verifyToken", verifyToken, (req, res) => {
   res.status(200).json({ message: "Token is valid" });
 });
 
+router.post("/verify-token",verifyToken)
+
 router.post("/send-verification-code", sendVerificationCode);
 router.post("/verify-code", verifySignupOtp);
 router.post("/resend-code", resendVerificationCode);
