@@ -14,7 +14,7 @@ import LoginPage from "./LoginPage";
 import StudentLogin from "./components/Students/StudentLogin";
 import StudentSignup from "./components/Students/StudentSignup";
 import MessAdminRoutes from "./components/Pages/Admin/MessAdminRoutes";
-import MaintenancePage from "./MaintenancePage";
+import MaintenancePage from "./MaintenancePage.jsx";
 
 // ===== Main Routes =====
 import { useAuth } from "./context/AuthContext";
