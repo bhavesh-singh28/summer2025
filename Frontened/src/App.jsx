@@ -65,7 +65,7 @@ const AppRoutes = () => {
 };
 
 // ===== Root App Component with Maintenance Mode =====
-const MAINTENANCE_MODE = false; // 🔧 Change to false to disable maintenance
+const MAINTENANCE_MODE = import.meta.env.VITE_MAINTENANCE_MODE; // 🔧 Change to false to disable maintenance
 
 const App = () => {
   return (
