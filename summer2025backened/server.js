@@ -24,7 +24,8 @@ const app = express();
 // Get directory name for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+console.log("dir name", __dirname)
+console.log("filename" , __filename)
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
 app.use(express.urlencoded({ limit: '50mb', extended: true })); // Also increased limit
@@ -34,6 +35,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true })); // Also increase
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/", (req, res) => {
   res.send("API is running...");
+});
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK", message: "Server is healthy" });
 });
 app.use("/api/auth", authRoutes);
 app.use("/api/notices", noticeRoutes);
