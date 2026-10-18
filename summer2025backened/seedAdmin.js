@@ -26,15 +26,23 @@ async function seedAdminUsers() {
     ];
 
     for (const adminData of adminUsers) {
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(adminData.password, 10);
+
       // Check if admin already exists
       const existingAdmin = await User.findOne({ email: adminData.email });
       if (existingAdmin) {
-        console.log(`⚠️ Admin user ${adminData.email} already exists`);
+        existingAdmin.password = hashedPassword;
+        existingAdmin.role = adminData.role;
+        existingAdmin.isVerified = adminData.isVerified;
+        await existingAdmin.save();
+        console.log(`🔄 Updated existing admin user ${adminData.email} with new password!`);
+        console.log(`   📧 Email: ${adminData.email}`);
+        console.log(`   🔑 Password: ${adminData.password}`);
+        console.log(`   👑 Role: ${adminData.role}`);
+        console.log("   ---");
         continue;
       }
-
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(adminData.password, 10);
 
       // Create admin user
       const adminUser = new User({
