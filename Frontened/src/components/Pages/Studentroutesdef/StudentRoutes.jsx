@@ -382,34 +382,30 @@ const StudentNotifications = () => {
 
   useEffect(() => {
     const fetchNotices = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/notices`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      try {
+        const token = localStorage.getItem("token");
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+        const response = await axios.get(`${backendUrl}/api/notices`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
 
+        let data = [];
+        if (Array.isArray(response.data)) {
+          data = response.data;
+        } else if (Array.isArray(response.data?.data)) {
+          data = response.data.data;
+        } else if (Array.isArray(response.data?.notices)) {
+          data = response.data.notices;
+        }
 
-    let data = [];
-
-    if (Array.isArray(response.data)) {
-      data = response.data;
-    } else if (Array.isArray(response.data.data)) {
-      data = response.data.data;
-    } else if (Array.isArray(response.data.notices)) {
-      data = response.data.notices;
-    } else {
-      throw new Error("Unexpected API response format.");
-    }
-
-    const sorted = data.sort((a, b) => new Date(b.date) - new Date(a.date));
-    setNotices(sorted);
-  } catch (err) {
-    console.error("Error fetching notices:", err);
-    setError("Failed to load notices.");
-  } finally {
-    setLoading(false);
-  }
-};
+        setNotices([...data].reverse());
+      } catch (err) {
+        console.error("Error fetching notices:", err);
+        setError("Failed to load notices.");
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchNotices();
   }, []);
 

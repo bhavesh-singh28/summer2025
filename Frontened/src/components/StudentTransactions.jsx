@@ -7,6 +7,7 @@ import {
   Eye,
   Calendar,
   DollarSign,
+  RotateCw,
 } from "lucide-react";
 import axios from "../api/axiosConfig";
 import PaginationControls from "./common/PaginationControls";
@@ -392,10 +393,12 @@ const handleDownloadForMonth = async (monthValue) => {
 
           {/* Refresh Button */}
           <button
-            onClick={fetchTransactions}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={() => fetchTransactions(page)}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Refresh
+            <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <span>{loading ? "Refreshing..." : "Refresh"}</span>
           </button>
         </div>
 

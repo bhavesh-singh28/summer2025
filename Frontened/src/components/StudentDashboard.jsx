@@ -1,6 +1,6 @@
 import QRCode from "react-qr-code";
 import { useState, useEffect } from "react";
-import { UtensilsCrossed, Bell, Receipt } from "lucide-react";
+import { UtensilsCrossed, Bell, Receipt, RotateCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axiosConfig";
 
@@ -8,6 +8,7 @@ const StudentDashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [qrToken, setQrToken] = useState("");
   const [qrLoading, setQrLoading] = useState(true);
+  const [isRefreshingQr, setIsRefreshingQr] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [mealsThisMonth, setMealsThisMonth] = useState(0);
   const [avgDailyExpense, setAvgDailyExpense] = useState(0);
@@ -55,14 +56,16 @@ const StudentDashboard = () => {
     const fetchNotifications = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("/notices", {
-          headers: { Authorization: `Bearer ${token}` },
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+        const response = await axios.get(`${backendUrl}/api/notices`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        const sortedNotices = response.data.sort(
-          (a, b) =>
-            new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)
-        );
-        setNotifications(sortedNotices);
+        const list = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.notices)
+          ? response.data.notices
+          : [];
+        setNotifications([...list].reverse());
       } catch (err) {
         console.error("Failed to fetch notifications:", err);
         setNotifications([
@@ -126,6 +129,7 @@ const StudentDashboard = () => {
   // Refresh QR code handler
   const handleRefreshQr = async () => {
     try {
+      setIsRefreshingQr(true);
       const token = localStorage.getItem("token");
       const res = await axios.post("/qr/refresh-token", {}, {
         headers: { Authorization: `Bearer ${token}` },
@@ -133,6 +137,8 @@ const StudentDashboard = () => {
       setQrToken(res.data.qrToken || "");
     } catch (err) {
       alert("Failed to refresh QR code");
+    } finally {
+      setIsRefreshingQr(false);
     }
   };
 
@@ -148,6 +154,7 @@ const StudentDashboard = () => {
           <QRCode value={qrToken} size={200} />
           <button
             onClick={handleRefreshQr}
+            disabled={isRefreshingQr}
             style={{
               marginTop: "1rem",
               padding: "0.5rem 1rem",
@@ -155,10 +162,15 @@ const StudentDashboard = () => {
               color: "#fff",
               border: "none",
               borderRadius: "6px",
-              cursor: "pointer",
+              cursor: isRefreshingQr ? "not-allowed" : "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              opacity: isRefreshingQr ? 0.75 : 1,
             }}
           >
-            Refresh QR Code
+            <RotateCw size={16} className={isRefreshingQr ? "animate-spin" : ""} />
+            <span>{isRefreshingQr ? "Refreshing..." : "Refresh QR Code"}</span>
           </button>
         </>
       ) : (
