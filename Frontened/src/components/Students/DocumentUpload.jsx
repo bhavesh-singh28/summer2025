@@ -10,9 +10,11 @@ import {
   UtensilsCrossed,
   GraduationCap,
   CreditCard,
+  Sparkles,
+  RotateCw,
 } from "lucide-react";
 
-const DocumentUpload = ({ data, updateData, onPrev }) => {
+const DocumentUpload = ({ data, updateData, onPrev, isTestMode }) => {
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     if (data.documents && Array.isArray(data.documents)) {
       return data.documents.reduce((acc, doc) => {
@@ -42,6 +44,19 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState("");
   const [generalSuccess, setGeneralSuccess] = useState("");
+
+  // 🧪 Helper to populate mock valid test documents (50KB - 200KB)
+  const fillTestDocuments = () => {
+    const mockBlob = new Blob([new Uint8Array(80 * 1024)], { type: "image/png" });
+    const testDocs = {
+      "Student ID Card": new File([mockBlob], "test_student_id.png", { type: "image/png" }),
+      "Hostel Allotment Letter": new File([mockBlob], "test_hostel_allotment.png", { type: "image/png" }),
+      "Fee Payment Receipt": new File([mockBlob], "test_fee_receipt.png", { type: "image/png" }),
+    };
+    setUploadedFiles(testDocs);
+    setErrors({});
+    setGeneralSuccess("All 3 test documents attached!");
+  };
 
   // Accept only images
   const acceptedFileTypes = ["image/jpeg", "image/jpg", "image/png"];
@@ -158,6 +173,25 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
     }
 
     setIsSubmitting(true);
+
+    // 🧪 In Test Mode: bypass backend upload!
+    if (isTestMode || data?.isTestMode) {
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setGeneralSuccess("Documents verified! (Test Mode - No backend saved)");
+        updateData({
+          documents: [
+            { type: "studentIdCard", originalName: "test_student_id.png" },
+            { type: "hostelAllotmentLetter", originalName: "test_hostel_allotment.png" },
+            { type: "feePaymentReceipt", originalName: "test_fee_receipt.png" },
+          ],
+          verificationStatus: "pending",
+        });
+        setTimeout(() => setIsComplete(true), 400);
+      }, 600);
+      return;
+    }
+
     const formData = new FormData();
 
     requiredDocuments.forEach((doc) => {
@@ -215,11 +249,29 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
         <h2 className="text-4xl font-bold text-gray-900 mb-4">
           🎉 Welcome to PU FOOD HUB!
         </h2>
-        <p className="text-xl text-gray-600 mb-8">
+        <p className="text-xl text-gray-600 mb-6">
           Your registration is complete! Get ready for an amazing dining experience.
         </p>
+
+        {(isTestMode || data?.isTestMode) && (
+          <div className="mb-8 p-5 bg-orange-50 border border-orange-200 rounded-2xl max-w-md mx-auto text-left shadow-sm">
+            <span className="font-bold text-orange-900 flex items-center gap-1.5 text-sm mb-2">
+              <Sparkles className="w-4 h-4 text-orange-600" />
+              Test Registration Preview Complete
+            </span>
+            <div className="space-y-1 text-xs text-orange-800">
+              <p>Name: <span className="font-semibold text-gray-900">{data.firstName} {data.lastName}</span></p>
+              <p>Unique Roll No: <span className="font-semibold text-gray-900">{data.studentId}</span></p>
+              <p>Email: <span className="font-semibold text-gray-900">{data.email}</span></p>
+            </div>
+            <p className="mt-3 text-[11px] text-gray-500 border-t border-orange-200 pt-2">
+              ✓ Pure frontend visualization — No records written to backend database.
+            </p>
+          </div>
+        )}
+
         <button
-          className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600"
+          className="bg-orange-500 text-white px-6 py-3 rounded-xl hover:bg-orange-600 font-semibold cursor-pointer shadow-md transition"
           onClick={() => (window.location.href = "/")}
         >
           Go to HOME
@@ -230,7 +282,7 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-10">
+      <div className="text-center mb-8">
         {generalError && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
             {generalError}
@@ -259,6 +311,26 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
           and each image must be between{" "}
           <span className="font-semibold">50KB–200KB</span>.
         </p>
+      </div>
+
+      {/* Test Documents Helper */}
+      <div className="mb-6 p-4 rounded-2xl bg-orange-50 border-2 border-dashed border-orange-300 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+        <div>
+          <p className="text-sm font-bold text-orange-900 flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-orange-600" />
+            Test Signup: Auto-attach Documents
+          </p>
+          <p className="text-xs text-orange-700">
+            Attaches valid sample files for Student ID, Hostel Allotment, and Fee Receipt.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={fillTestDocuments}
+          className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold text-sm rounded-xl hover:from-orange-600 hover:to-amber-600 shadow transition cursor-pointer whitespace-nowrap"
+        >
+          Attach Test Documents
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
@@ -337,9 +409,16 @@ const DocumentUpload = ({ data, updateData, onPrev }) => {
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || !allDocumentsUploaded}
-          className="px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
         >
-          {isSubmitting ? "Processing..." : "Complete Registration"}
+          {isSubmitting ? (
+            <>
+              <RotateCw className="w-4 h-4 animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            <span>Complete Registration</span>
+          )}
         </button>
       </div>
     </div>

@@ -5,9 +5,14 @@ import {
   Send,
   CheckCircle,
   ArrowRight,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Sparkles,
+  KeyRound
 } from 'lucide-react';
-const EmailVerification = ({ data, updateData, onNext }) => {
+
+export const FIXED_TEST_OTP = "123456";
+
+const EmailVerification = ({ data, updateData, onNext, isTestMode }) => {
   const sectionRef = useRef(null);
   const [email, setEmail] = useState(data.email || '');
   const [otp, setOtp] = useState(data.otp || '');
@@ -34,25 +39,56 @@ const EmailVerification = ({ data, updateData, onNext }) => {
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const sendVerificationCode = async () => {
-  setErrors({});
-  if (!email) return setErrors({ email: 'Email is required' });
-  if (!validateEmail(email)) return setErrors({ email: 'Please enter a valid email address' });
-
-  setIsSending(true);
-  try {
-    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/send-verification-code`, { email });
+  const handleGenerateTestEmail = () => {
+    // Generate random unique email
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const testEmail = `student.${randomSuffix}@pu.ac.in`;
+    setEmail(testEmail);
+    setOtp(FIXED_TEST_OTP);
     setIsEmailSent(true);
     setTimer(60);
-    updateData({ email });
-    setSuccessMessage("Verification code sent successfully!");
-  } catch (err) {
-    setErrors({ email: err.response?.data?.error || 'Failed to send verification code' });
-  } finally {
-    setIsSending(false);
-  }
-};
+    updateData({ email: testEmail, otp: FIXED_TEST_OTP, isTestMode: true });
+    setSuccessMessage(`Test email generated! Fixed OTP: ${FIXED_TEST_OTP}`);
+    setErrors({});
+  };
 
+  const handleFillTestOtp = () => {
+    setOtp(FIXED_TEST_OTP);
+    setErrors({});
+  };
+
+  const sendVerificationCode = async () => {
+    setErrors({});
+    if (!email) return setErrors({ email: 'Email is required' });
+    if (!validateEmail(email)) return setErrors({ email: 'Please enter a valid email address' });
+
+    setIsSending(true);
+
+    // If test mode is active, simulate without hitting backend
+    if (isTestMode || data?.isTestMode) {
+      setTimeout(() => {
+        setIsSending(false);
+        setIsEmailSent(true);
+        setOtp(FIXED_TEST_OTP);
+        setTimer(60);
+        updateData({ email, otp: FIXED_TEST_OTP, isTestMode: true });
+        setSuccessMessage(`Verification code sent! (Test fixed OTP: ${FIXED_TEST_OTP})`);
+      }, 400);
+      return;
+    }
+
+    try {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/send-verification-code`, { email });
+      setIsEmailSent(true);
+      setTimer(60);
+      updateData({ email });
+      setSuccessMessage("Verification code sent successfully!");
+    } catch (err) {
+      setErrors({ email: err.response?.data?.error || 'Failed to send verification code' });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const verifyCode = async () => {
     setErrors({});
@@ -60,6 +96,17 @@ const EmailVerification = ({ data, updateData, onNext }) => {
     if (otp.length !== 6) return setErrors({ code: 'Verification code must be 6 digits' });
 
     setIsVerifying(true);
+
+    // Test mode or test fixed OTP verification (pure frontend)
+    if (isTestMode || data?.isTestMode || otp === FIXED_TEST_OTP) {
+      setTimeout(() => {
+        setIsVerifying(false);
+        updateData({ otp, email, isTestMode: true });
+        onNext();
+      }, 500);
+      return;
+    }
+
     try {
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/verify-code`, { email, otp });
       setIsVerifying(false);
@@ -76,30 +123,23 @@ const EmailVerification = ({ data, updateData, onNext }) => {
   };
 
   return (
- <div
-    ref={sectionRef}
-    className="
-      w-full 
-      max-w-[90%] sm:max-w-lg md:max-w-xl lg:max-w-2xl 
-      mx-auto 
-      px-4 sm:px-6 md:px-10 
-      py-8 sm:py-10 
-      flex flex-col 
-      justify-center
-    "
-  >    
-<div className="text-center mb-6 sm:mb-8 md:mb-10">        {/* 👇 Modern small round icon */}
-        {/* <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-          <Mail className="w-5 h-5 text-orange-600" />
+    <div
+      ref={sectionRef}
+      className="
+        w-full 
+        max-w-[90%] sm:max-w-lg md:max-w-xl lg:max-w-2xl 
+        mx-auto 
+        px-4 sm:px-6 md:px-10 
+        py-8 sm:py-10 
+        flex flex-col 
+        justify-center
+      "
+    >
+      {successMessage && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-center text-sm font-semibold">
+          {successMessage}
         </div>
-
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">Verify Your Student Email</h2>
-        <p className="text-lg text-gray-600">
-          {!isEmailSent
-            ? 'Enter your student email to access FoodieHub services'
-            : "We've sent a delicious verification code to your email!"}
-        </p> */}
-      </div>
+      )}
 
       {!isEmailSent ? (
         <div className="space-y-6">
@@ -113,8 +153,8 @@ const EmailVerification = ({ data, updateData, onNext }) => {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-4 sm:px-5 py-3 sm:py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all duration-300 text-base sm:text-lg md:text-xl ${
-    errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-orange-300'
+                className={`w-full px-4 sm:px-5 py-3 sm:py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all duration-300 text-base sm:text-lg md:text-xl bg-white ${
+                  errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-orange-300'
                 }`}
                 placeholder="student@university.edu"
               />
@@ -129,37 +169,53 @@ const EmailVerification = ({ data, updateData, onNext }) => {
           </div>
 
           <button
-  onClick={sendVerificationCode}
-  disabled={isSending}
-className="
-    w-full 
-    bg-gradient-to-r from-orange-500 to-amber-500 
-    text-white 
-    py-3 sm:py-4 md:py-5 
-    px-4 sm:px-6 
-    rounded-xl 
-    hover:from-orange-600 hover:to-amber-600 
-    transition-all duration-300 
-    font-semibold 
-    text-base sm:text-lg md:text-xl 
-    flex items-center justify-center gap-3 
-    shadow-md hover:shadow-lg 
-    transform hover:scale-105 
-    disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none
-  ">
-  {isSending ? (
-    <>
+            onClick={sendVerificationCode}
+            disabled={isSending}
+            className="
+              w-full 
+              bg-gradient-to-r from-orange-500 to-amber-500 
+              text-white 
+              py-3 sm:py-4 md:py-5 
+              px-4 sm:px-6 
+              rounded-xl 
+              hover:from-orange-600 hover:to-amber-600 
+              transition-all duration-300 
+              font-semibold 
+              text-base sm:text-lg md:text-xl 
+              flex items-center justify-center gap-3 
+              shadow-md hover:shadow-lg 
+              transform hover:scale-105 
+              disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none
+              cursor-pointer
+            "
+          >
+            {isSending ? (
+              <>
                 <div className="w-5 h-5 sm:w-6 sm:h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
-      Sending...
-    </>
-  ) : (
-    <>
+                Sending...
+              </>
+            ) : (
+              <>
                 <Send className="w-5 h-5 sm:w-6 sm:h-6" />
-      Send Verification Code
-    </>
-  )}
-</button>
+                Send Verification Code
+              </>
+            )}
+          </button>
 
+          {/* Test Signup Helper Button */}
+          <div className="pt-2 border-t border-orange-200">
+            <button
+              type="button"
+              onClick={handleGenerateTestEmail}
+              className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-orange-400 bg-orange-50 hover:bg-orange-100 text-orange-700 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <Sparkles className="w-4 h-4 text-orange-600" />
+              <span>Use Test Signup (Random Email & Fixed OTP)</span>
+            </button>
+            <p className="text-xs text-gray-500 text-center mt-1.5">
+              Generates a unique random student email and fixed OTP 123456 (Frontend preview only)
+            </p>
+          </div>
 
           <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4">
             <p className="text-orange-800 text-sm text-center">
@@ -180,9 +236,19 @@ className="
           </div>
 
           <div>
-            <label htmlFor="code" className="block text-sm font-semibold text-gray-700 mb-3">
-              Enter 6-Digit Verification Code
-            </label>
+            <div className="flex justify-between items-center mb-3">
+              <label htmlFor="code" className="block text-sm font-semibold text-gray-700">
+                Enter 6-Digit Verification Code
+              </label>
+              <button
+                type="button"
+                onClick={handleFillTestOtp}
+                className="text-xs font-semibold text-orange-600 hover:text-orange-800 flex items-center gap-1 cursor-pointer bg-orange-100 px-2.5 py-1 rounded-lg"
+              >
+                <KeyRound className="w-3 h-3" />
+                Fill Test OTP (123456)
+              </button>
+            </div>
             <input
               type="text"
               id="code"
@@ -190,7 +256,7 @@ className="
               onChange={(e) =>
                 setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
               }
-              className={`w-full px-4 sm:px-5 py-3 sm:py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all duration-300 text-center text-xl sm:text-2xl font-mono tracking-widest ${
+              className={`w-full px-4 sm:px-5 py-3 sm:py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all duration-300 text-center text-xl sm:text-2xl font-mono tracking-widest bg-white ${
                 errors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-orange-300'
               }`}
               placeholder="● ● ● ● ● ●"
@@ -207,7 +273,7 @@ className="
           <button
             onClick={verifyCode}
             disabled={isVerifying}
-            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 font-semibold text-base sm:text-lg flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105 disabled:transform-none"
+            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 font-semibold text-base sm:text-lg flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105 disabled:transform-none cursor-pointer"
           >
             {isVerifying ? (
               <>
@@ -230,7 +296,7 @@ className="
             ) : (
               <button
                 onClick={resendCode}
-                className="text-sm sm:text-base text-orange-600 hover:text-orange-700 transition-colors font-semibold bg-orange-50 hover:bg-orange-100 rounded-lg py-2 px-4"
+                className="text-sm sm:text-base text-orange-600 hover:text-orange-700 transition-colors font-semibold bg-orange-50 hover:bg-orange-100 rounded-lg py-2 px-4 cursor-pointer"
               >
                 📧 Didn't receive the code? Resend now
               </button>

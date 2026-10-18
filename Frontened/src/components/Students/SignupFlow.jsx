@@ -7,6 +7,7 @@ import {
   UtensilsCrossed,
   Coffee,
   ChefHat,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -14,7 +15,8 @@ import EmailVerification from "./EmailVerification";
 import PersonalDetails from "./PersonalDetails";
 import DocumentUpload from "./DocumentUpload";
 
-const SignupFlow = () => {
+const SignupFlow = ({ initialTestMode = false }) => {
+  const [isTestMode, setIsTestMode] = useState(initialTestMode);
   const [currentStep, setCurrentStep] = useState(1);
   const [signupData, setSignupData] = useState({
     email: "",
@@ -33,6 +35,8 @@ const SignupFlow = () => {
     mealPlan: "",
     dietaryRestrictions: "",
     documents: [],
+    imageUrl: "",
+    isTestMode: initialTestMode,
   });
 
   const steps = [
@@ -58,6 +62,9 @@ const SignupFlow = () => {
 
   const updateSignupData = (data) => {
     setSignupData((prev) => ({ ...prev, ...data }));
+    if (data.isTestMode !== undefined) {
+      setIsTestMode(data.isTestMode);
+    }
   };
 
   const nextStep = () => {
@@ -78,6 +85,7 @@ const SignupFlow = () => {
             data={signupData}
             updateData={updateSignupData}
             onNext={nextStep}
+            isTestMode={isTestMode}
           />
         );
       case 2:
@@ -87,6 +95,7 @@ const SignupFlow = () => {
             updateData={updateSignupData}
             onNext={nextStep}
             onPrev={prevStep}
+            isTestMode={isTestMode}
           />
         );
       case 3:
@@ -95,6 +104,7 @@ const SignupFlow = () => {
             data={signupData}
             updateData={updateSignupData}
             onPrev={prevStep}
+            isTestMode={isTestMode}
           />
         );
       default:
@@ -112,10 +122,42 @@ const SignupFlow = () => {
       </div>
 
       <div className="relative z-10 px-6 py-12 sm:px-8 md:px-16 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent mb-4">
             Student Registration
           </h1>
+        </div>
+
+        {/* Test Mode Switch / Banner */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-10 p-4 bg-white/80 backdrop-blur rounded-2xl border border-orange-200 shadow-sm max-w-2xl mx-auto">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-5 h-5 text-orange-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-gray-800">
+                {isTestMode ? "🧪 Test Signup Active" : "Testing Signup Flow?"}
+              </p>
+              <p className="text-xs text-gray-500">
+                {isTestMode
+                  ? "Random email, fixed OTP 123456, unique roll no (frontend preview only, no backend save)."
+                  : "Turn on Test Mode to preview the entire signup flow without saving records to backend."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const newMode = !isTestMode;
+              setIsTestMode(newMode);
+              updateSignupData({ isTestMode: newMode });
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer whitespace-nowrap ${
+              isTestMode
+                ? "bg-orange-500 text-white hover:bg-orange-600"
+                : "border border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100"
+            }`}
+          >
+            {isTestMode ? "✓ Test Mode: ON" : "Enable Test Mode"}
+          </button>
         </div>
 
         <div className="flex flex-col items-center md:flex-row justify-center mb-16 space-y-10 md:space-y-0 md:space-x-10">

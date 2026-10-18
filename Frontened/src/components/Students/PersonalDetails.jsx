@@ -13,10 +13,11 @@ import {
   X,
   Check, // Icon for confirm button
   RefreshCw, // Icon for retake button
+  Sparkles,
 } from "lucide-react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
+const PersonalDetails = ({ data, updateData, onNext, onPrev, isTestMode }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false); // To prevent multiple submissions
   const [errors, setErrors] = useState({}); // field-level errors
@@ -44,6 +45,47 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
     imageUrl: data?.imageUrl || "", // Field to store the image URL from Cloudinary
   });
 
+  useEffect(() => {
+    if (data?.email && !formData.email) {
+      setFormData((prev) => ({ ...prev, email: data.email }));
+    }
+  }, [data?.email]);
+
+  // 🧪 Helper to fill test data with consistent fields and unique roll number
+  const fillTestData = () => {
+    // Generate unique Roll No / Student ID (digits only as required by validation)
+    const uniqueRollNo = `25010${Math.floor(1000 + Math.random() * 9000)}`;
+    const currentEmail =
+      data?.email ||
+      formData.email ||
+      `student.${Math.floor(100000 + Math.random() * 900000)}@pu.ac.in`;
+
+    // High quality sample avatar SVG
+    const sampleAvatar =
+      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23fed7aa'/%3E%3Ccircle cx='100' cy='75' r='40' fill='%23ea580c'/%3E%3Cpath d='M30 180 c0-40 30-65 70-65 s70 25 70 65 Z' fill='%23ea580c'/%3E%3C/svg%3E";
+
+    setFormData((prev) => ({
+      ...prev,
+      firstname: "Aarav",
+      lastname: "Patel",
+      phone: "9876543210",
+      email: currentEmail,
+      DOB: "2003-08-22",
+      address: "Room 304, Boys Hostel No 4, PU South Campus",
+      city: "Chandigarh",
+      state: "Punjab",
+      zipcode: "160014",
+      studentid: uniqueRollNo,
+      hostelblock: "BH-4",
+      roomno: "304",
+      imageUrl: sampleAvatar,
+    }));
+    setImgSrc(sampleAvatar);
+    setErrors({});
+    setGeneralError("");
+    setGeneralSuccess(`Test data filled with Unique Roll No: ${uniqueRollNo}`);
+  };
+
   // ⬇️ NEW: Function to capture the image from the webcam
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current.getScreenshot();
@@ -61,6 +103,37 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
     // First, validate the form
     if (!validateForm()) {
+      return;
+    }
+
+    // 🧪 In Test Mode: bypass backend existence check, camera requirement & backend saving!
+    if (isTestMode || data?.isTestMode) {
+      setIsSubmitting(true);
+      setGeneralSuccess("Test data validated! Proceeding to documents (No backend saved)...");
+
+      const mappedData = {
+        firstName: formData.firstname,
+        lastName: formData.lastname,
+        phone: formData.phone,
+        email: formData.email,
+        dateOfBirth: formData.DOB,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipcode,
+        studentId: formData.studentid,
+        hostelBlock: formData.hostelblock,
+        roomNumber: formData.roomno,
+        imageUrl: formData.imageUrl || imgSrc,
+        isTestMode: true,
+      };
+
+      updateData(mappedData);
+
+      setTimeout(() => {
+        setIsSubmitting(false);
+        onNext();
+      }, 500);
       return;
     }
 
@@ -105,6 +178,34 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
   // ⬇️ MODIFIED: This function now handles the image upload to YOUR BACKEND
   //              and then the rest of the form submission.
   const uploadImageAndContinue = async () => {
+    // In Test Mode: bypass backend upload!
+    if (isTestMode || data?.isTestMode) {
+      setIsSubmitting(true);
+      const mappedData = {
+        firstName: formData.firstname,
+        lastName: formData.lastname,
+        phone: formData.phone,
+        email: formData.email,
+        dateOfBirth: formData.DOB,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipcode,
+        studentId: formData.studentid,
+        hostelBlock: formData.hostelblock,
+        roomNumber: formData.roomno,
+        imageUrl: formData.imageUrl || imgSrc,
+        isTestMode: true,
+      };
+      updateData(mappedData);
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setShowCamera(false);
+        onNext();
+      }, 500);
+      return;
+    }
+
     if (!imgSrc) {
       setErrors((e) => ({
         ...e,
@@ -399,8 +500,17 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
                     className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 font-semibold transition-transform transform hover:scale-105 shadow-lg"
                     disabled={isSubmitting}
                   >
-                    <Check className="w-5 h-5" />
-                    {isSubmitting ? "Uploading & Saving..." : "Confirm & Save"}
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        <span>Uploading & Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-5 h-5" />
+                        <span>Confirm & Save</span>
+                      </>
+                    )}
                   </button>
                 </>
               ) : (
@@ -419,6 +529,26 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
 
       {/* --- Your existing form JSX below --- */}
       <div>
+        {/* Test Personal Details Helper */}
+        <div className="mb-6 p-4 rounded-2xl bg-orange-50 border-2 border-dashed border-orange-300 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+          <div>
+            <p className="text-sm font-bold text-orange-900 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-orange-600" />
+              Test Signup: Auto-fill Form
+            </p>
+            <p className="text-xs text-orange-700">
+              Fills all required personal fields with consistent test data & a unique roll number.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={fillTestData}
+            className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold text-sm rounded-xl hover:from-orange-600 hover:to-amber-600 shadow transition cursor-pointer whitespace-nowrap"
+          >
+            Fill Test Data
+          </button>
+        </div>
+
         <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-200">
           <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <User className="w-5 h-5 text-orange-600" />
@@ -759,8 +889,17 @@ const PersonalDetails = ({ data, updateData, onNext, onPrev }) => {
             isSubmitting ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
-          {isSubmitting ? "Saving..." : "Continue to Documents"}
-          <ArrowRight className="w-5 h-5" />
+          {isSubmitting ? (
+            <>
+              <RefreshCw className="w-5 h-5 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <span>Continue to Documents</span>
+              <ArrowRight className="w-5 h-5" />
+            </>
+          )}
         </button>
       </div>
     </div>
