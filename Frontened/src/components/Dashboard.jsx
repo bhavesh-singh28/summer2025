@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  UtensilsCrossed,
-  ShoppingCart,
-  IndianRupee,
-  Users, // ✅ Added this import
-} from "lucide-react";
+import { Users } from "lucide-react";
 import axios from "axios";
 import {
   LineChart,
@@ -33,63 +28,69 @@ const StatCard = ({ title, value, icon, bg }) => (
 export default function Dashboard() {
   const [stats, setStats] = useState(null); 
 
- useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const resp = await axios.get("/api/stats");
-      setStats({
-        totalStudents: resp.data.totalStudents ?? 0,
-        mealsToday: resp.data.mealsToday ?? 0,
-        canteenOrders: resp.data.canteenOrders ?? 0,
-        mealData:  [
-          { day: "Mon", meals: 20 },
-          { day: "Tue", meals: 25 },
-          { day: "Wed", meals: 18 },
-          { day: "Thu", meals: 30 },
-          { day: "Fri", meals: 22 },
-          { day: "Sat", meals: 28 },
-          { day: "Sun", meals: 15 },
-        ],
-        canteenOrdersData: resp.data.canteenOrdersData ?? [
-          { day: "Mon", orders: 5 },
-          { day: "Tue", orders: 8 },
-          { day: "Wed", orders: 6 },
-          { day: "Thu", orders: 10 },
-          { day: "Fri", orders: 7 },
-          { day: "Sat", orders: 9 },
-          { day: "Sun", orders: 4 },
-        ],
-      });
-    } catch (err) {
-      console.error("Error fetching stats:", err);
-      setStats({
-        totalStudents: 0,
-        mealsToday: 0,
-        canteenOrders: 0,
-        mealData: [
-          { day: "Mon", meals: 20 },
-          { day: "Tue", meals: 25 },
-          { day: "Wed", meals: 18 },
-          { day: "Thu", meals: 30 },
-          { day: "Fri", meals: 22 },
-          { day: "Sat", meals: 28 },
-          { day: "Sun", meals: 15 },
-        ],
-        canteenOrdersData: [
-          { day: "Mon", orders: 5 },
-          { day: "Tue", orders: 8 },
-          { day: "Wed", orders: 6 },
-          { day: "Thu", orders: 10 },
-          { day: "Fri", orders: 7 },
-          { day: "Sat", orders: 9 },
-          { day: "Sun", orders: 4 },
-        ],
-      });
-    }
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const rawBackend = (import.meta.env.VITE_BACKEND_URL || "http://localhost:3000").trim();
+        const backendBase = rawBackend.replace(/\/api\/?$/, "");
+        const resp = await axios.get(`${backendBase}/api/stats`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        setStats({
+          totalStudents: resp.data.totalStudents ?? 0,
+          mealsToday: resp.data.mealsToday ?? 0,
+          canteenOrders: resp.data.canteenOrders ?? 0,
+          mealData: resp.data.mealData && resp.data.mealData.length > 0
+            ? resp.data.mealData
+            : [
+                { day: "Mon", meals: 20 },
+                { day: "Tue", meals: 25 },
+                { day: "Wed", meals: 18 },
+                { day: "Thu", meals: 30 },
+                { day: "Fri", meals: 22 },
+                { day: "Sat", meals: 28 },
+                { day: "Sun", meals: 15 },
+              ],
+          canteenOrdersData: resp.data.canteenOrdersData ?? [
+            { day: "Mon", orders: 5 },
+            { day: "Tue", orders: 8 },
+            { day: "Wed", orders: 6 },
+            { day: "Thu", orders: 10 },
+            { day: "Fri", orders: 7 },
+            { day: "Sat", orders: 9 },
+            { day: "Sun", orders: 4 },
+          ],
+        });
+      } catch {
+        setStats({
+          totalStudents: 0,
+          mealsToday: 0,
+          canteenOrders: 0,
+          mealData: [
+            { day: "Mon", meals: 20 },
+            { day: "Tue", meals: 25 },
+            { day: "Wed", meals: 18 },
+            { day: "Thu", meals: 30 },
+            { day: "Fri", meals: 22 },
+            { day: "Sat", meals: 28 },
+            { day: "Sun", meals: 15 },
+          ],
+          canteenOrdersData: [
+            { day: "Mon", orders: 5 },
+            { day: "Tue", orders: 8 },
+            { day: "Wed", orders: 6 },
+            { day: "Thu", orders: 10 },
+            { day: "Fri", orders: 7 },
+            { day: "Sat", orders: 9 },
+            { day: "Sun", orders: 4 },
+          ],
+        });
+      }
+    };
 
-  fetchData();
-}, []);
+    fetchData();
+  }, []);
 
   if (!stats) {
     return <div>Loading...</div>; // ✅ Show loading until data is ready
@@ -102,18 +103,6 @@ export default function Dashboard() {
       icon: <Users className="text-white w-6 h-6" />,
       bg: "from-indigo-500 to-indigo-700",
     },
-    {
-      title: "Meals Today",
-      value: stats.mealsToday,
-      icon: <UtensilsCrossed className="text-white w-6 h-6" />,
-      bg: "from-green-400 to-green-600",
-    },
-    {
-      title: "Canteen Orders",
-      value: stats.canteenOrders,
-      icon: <ShoppingCart className="text-white w-6 h-6" />,
-      bg: "from-yellow-400 to-yellow-600",
-    },
   ];
 
   return (
@@ -122,7 +111,7 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat) => (
           <StatCard
             key={stat.title}

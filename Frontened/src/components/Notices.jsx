@@ -9,10 +9,20 @@ const NoticeBoard = () => {
   useEffect(() => {
     const fetchNotices = async () => {
       try {
-        const res = await axios.get("/notices");
-        setNotices(res.data.reverse());
-      } catch (err) {
-        console.error("Failed to fetch notices:", err);
+        const token = localStorage.getItem("token");
+        const rawBackend = (import.meta.env.VITE_BACKEND_URL || "http://localhost:3000").trim();
+        const backendBase = rawBackend.replace(/\/api\/?$/, "");
+        const res = await axios.get(`${backendBase}/api/notices`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.notices)
+          ? res.data.notices
+          : [];
+        setNotices([...data].reverse());
+      } catch {
+        // Graceful handling without noisy console
       }
     };
     fetchNotices();
@@ -32,11 +42,16 @@ const NoticeBoard = () => {
       const noticeData = { text: newNotice, date: formattedDate };
 
       try {
-        await axios.post("/notices", noticeData);
+        const token = localStorage.getItem("token");
+        const rawBackend = (import.meta.env.VITE_BACKEND_URL || "http://localhost:3000").trim();
+        const backendBase = rawBackend.replace(/\/api\/?$/, "");
+        await axios.post(`${backendBase}/api/notices`, noticeData, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         setNotices([noticeData, ...notices]);
         setNewNotice("");
       } catch (err) {
-        console.error("Failed to add notice:", err);
+        // error handling
       } finally {
         setIsLoading(false);
       }

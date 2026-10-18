@@ -1,26 +1,31 @@
 import Stats from "../models/stats.model.js";
 import resetAllStats from "../utils/Meal_reset.js";
 import personaldetailModel from "../models/personaldetail.model.js";
+import User from "../models/user.model.js";
 
 export const getStats = async (req, res) => {
   try {
-    // Optionally run reset daily here (or better: with cron)
-    // await resetAllStats();
+    const personalCount = await personaldetailModel.countDocuments();
+    const userStudentCount = await User.countDocuments({ role: "student" });
+    const totalStudents = Math.max(personalCount, userStudentCount);
 
-    const totalStudents = await personaldetailModel.countDocuments();
-
-    // Get stats document (assuming you have only one global stats doc)
-    const stats = await Stats.findOne().lean();
+    let stats = await Stats.findOne().lean();
 
     if (!stats) {
-      return res.status(404).json({ error: "Stats document not found" });
+      stats = await Stats.create({
+        totalStudents,
+        mealsToday: 0,
+        canteenOrders: 0,
+        revenue: 0,
+        mealData: [],
+      });
     }
 
     res.status(200).json({
       totalStudents,
-      mealsToday: stats.mealsToday,
-      canteenOrders: stats.canteenOrders,
-      mealData: stats.mealData, // full meal history
+      mealsToday: stats.mealsToday ?? 0,
+      canteenOrders: stats.canteenOrders ?? 0,
+      mealData: stats.mealData ?? [],
     });
   } catch (err) {
     res

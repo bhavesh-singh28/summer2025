@@ -24,12 +24,18 @@ const app = express();
 // Get directory name for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-console.log("dir name", __dirname)
-console.log("filename" , __filename)
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
 app.use(express.urlencoded({ limit: '50mb', extended: true })); // Also increased limit
-// ...
+
+// Normalize redundant /api prefixes (e.g. /api/api/* -> /api/*)
+app.use((req, res, next) => {
+  if (req.url.startsWith("/api/api/")) {
+    req.url = req.url.replace(/^\/api\/api\//, "/api/");
+  }
+  next();
+});
 
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -40,16 +46,25 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK", message: "Server is healthy" });
 });
 app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
 app.use("/api/notices", noticeRoutes);
+app.use("/notices", noticeRoutes);
 app.use("/api/mess-staff", messStaffRoutes);
+app.use("/mess-staff", messStaffRoutes);
 app.use("/api/expense", expenseRoutes);
+app.use("/expense", expenseRoutes);
 // app.use("/api/canteen-staff", canteenStaffRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/students", studentRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/stats", statsRoutes);
 app.use("/api/menu", menuRoutes);
-app.use("/api/personaldetail", personaldetailRouter); // ✅ Fixed semicolon
+app.use("/menu", menuRoutes);
+app.use("/api/personaldetail", personaldetailRouter);
+app.use("/personaldetail", personaldetailRouter);
 app.use("/api/test", testRoutes);
 app.use("/api/qr", qrRoutes);
+app.use("/qr", qrRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)
