@@ -32,6 +32,7 @@ const AppRoutes = () => {
       <Route path="/student-login" element={<StudentLogin />} />
       <Route path="/signup" element={<LoginPage mode="signup" />} />
       <Route path="/student-signup" element={<StudentSignup />} />
+      <Route path="/test-signup" element={<StudentSignup isTest={true} />} />
       <Route path="/mess-admin/*" element={<MessAdminRoutes />} />
 
       <Route
