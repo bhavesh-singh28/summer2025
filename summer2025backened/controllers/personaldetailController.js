@@ -163,22 +163,16 @@ export const uploadDocuments = async (req, res) => {
       }
     }
 
-    console.log("uploadDocuments: req.body:", req.body);
-    console.log("uploadDocuments: normalized documentTypes:", documentTypes);
-
     // --- Validate files ---
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ status: 0, message: "No files uploaded" });
     }
-    console.log(`uploadDocuments: ${req.files.length} files received`);
 
     // --- Find student ---
     const student = await personaldetailModel.findOne({ studentid: studentId });
     if (!student) {
       return res.status(404).json({ status: 0, message: "Student not found" });
     }
-    console.log("student found:", studentId);
-    console.log("found student:", student);
     const uploadedCloudinaryDocuments = [];
 
     for (let i = 0; i < req.files.length; i++) {
@@ -227,8 +221,6 @@ export const uploadDocuments = async (req, res) => {
         mimetype: file.mimetype,
         uploadDate: new Date(),
       });
-
-      console.log("Uploaded to Cloudinary:", result.secure_url);
     }
 
     // ensure documents array exists
@@ -286,16 +278,14 @@ export const verifyDocuments = async (req, res) => {
 
           await newUser.save();
 
-          // Send login credentials email
-          const fullName = `${student.firstname} ${student.lastname}`;
-          await sendLoginCredentials(
-            student.email,
-            fullName,
-            student.email,
-            generatedPassword
-          );
-
-          console.log(`Login credentials sent to ${student.email}`);
+          // Send login credentials email (email service commented out)
+          // const fullName = `${student.firstname} ${student.lastname}`;
+          // await sendLoginCredentials(
+          //   student.email,
+          //   fullName,
+          //   student.email,
+          //   generatedPassword
+          // );
         }
       } catch (emailError) {
         console.error(
@@ -305,10 +295,9 @@ export const verifyDocuments = async (req, res) => {
         // Still return success for document verification even if email fails
       }
     }else if(status === "rejected"){
-      // Send rejection email
+      // Send rejection email (email service commented out)
       try{
-        await sendRejectionEmail(student.email, student.firstname, student.lastname);
-        console.log(`Rejection email sent to ${student.email}`);
+        // await sendRejectionEmail(student.email, student.firstname, student.lastname);
       }catch(emailError){
         console.error("Error sending rejection email:", emailError);
       }

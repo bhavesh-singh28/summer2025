@@ -8,7 +8,6 @@ import PDFDocument from "pdfkit";
 export const createExpense = async (req, res) => {
   try {
     const { studentid, amount, description } = req.body;
-    console.log("Request body:", req.body);
 
     if (!studentid || !amount) {
       return res
@@ -18,11 +17,6 @@ export const createExpense = async (req, res) => {
 
     // Ensure description is not empty, provide default if needed
     const finalDescription = description?.trim() || "Mess Expense";
-    console.log("📝 Description handling:", {
-      original: description,
-      final: finalDescription,
-      isEmpty: !description || description.trim() === "",
-    });
 
     const studentDetail = await personaldetailModel.findOne({ studentid });
 
@@ -43,7 +37,6 @@ export const createExpense = async (req, res) => {
     });
 
     await expense.save();
-    console.log("✅ Expense saved successfully");
 
     res.status(201).json({
       message: "Expense recorded successfully",

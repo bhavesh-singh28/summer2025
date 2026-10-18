@@ -2,26 +2,27 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GOOGLE_APP_EMAIL,
-    pass: process.env.GOOGLE_APP_PASSWORD,
-  },
-});
+// Create transporter (email service commented out)
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.GOOGLE_APP_EMAIL,
+//     pass: process.env.GOOGLE_APP_PASSWORD,
+//   },
+// });
 
-// Verify connection once at startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email service connection failed:", error);
-  } else {
-    console.log("Email service ready to send messages.");
-  }
-});
+// Verify connection once at startup (email service commented out)
+// transporter.verify((error, success) => {
+//   if (error) {
+//     console.error("Email service connection failed:", error);
+//   } else {
+//     console.log("Email service ready to send messages.");
+//   }
+// });
 
-// ✅ Student Signup Email
+// ✅ Student Signup Email (email service commented out)
 const studentsignup = async (to, email, password) => {
+  /*
   try {
     const mailOptions = {
       from: process.env.GOOGLE_APP_EMAIL,
@@ -42,14 +43,16 @@ Mess and Canteen Management Team`,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("Signup email sent to", to);
   } catch (error) {
     console.error("Error sending signup email:", error);
   }
+  */
+  return { success: true, message: "Email service disabled" };
 };
 
-// ✅ OTP Verification Email
+// ✅ OTP Verification Email (email service commented out)
 const sendOtpVerificationEmail = async (to, otp) => {
+  /*
   try {
     const mailOptions = {
       from: process.env.GOOGLE_APP_EMAIL,
@@ -70,15 +73,17 @@ Mess and Canteen Management Team`,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("OTP email sent to", to);
   } catch (error) {
     console.error("Error sending OTP email:", error);
     throw error;
   }
+  */
+  return { success: true, message: "Email service disabled" };
 };
 
-// ✅ Student Login Credentials Email
+// ✅ Student Login Credentials Email (email service commented out)
 const sendLoginCredentials = async (to, fullName, email, password) => {
+  /*
   try {
     const mailOptions = {
       from: process.env.GOOGLE_APP_EMAIL,
@@ -162,13 +167,17 @@ Mess & Canteen Management Team`,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("Login credentials email sent to", to);
   } catch (error) {
     console.error("Error sending login credentials email:", error);
     throw error;
   }
+  */
+  return { success: true, message: "Email service disabled" };
 };
+
+// ✅ Rejection Email (email service commented out)
 const sendRejectionEmail = async (to, firstName, lastName) => {
+  /*
   try {
     const mailOptions = {
       from: process.env.GOOGLE_APP_EMAIL,
@@ -187,12 +196,13 @@ Mess and Canteen Management Team`,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("Rejection email sent to", to);
   } catch (error) {
     console.error("Error sending rejection email:", error);
     throw error;
   }
+  */
+  return { success: true, message: "Email service disabled" };
 };
 
-// ✅ Export both functions
+// ✅ Export functions
 export { studentsignup, sendOtpVerificationEmail, sendLoginCredentials, sendRejectionEmail };

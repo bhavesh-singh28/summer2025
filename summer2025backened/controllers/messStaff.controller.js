@@ -78,11 +78,12 @@ export const addMessStaff = async (req, res) => {
       </div>
     `;
 
-    await sendEmail({
-      email: savedStaff.email,
-      subject: "Your Mess Staff Account Credentials",
-      html: emailHtml,
-    });
+    // Email service commented out
+    // await sendEmail({
+    //   email: savedStaff.email,
+    //   subject: "Your Mess Staff Account Credentials",
+    //   html: emailHtml,
+    // });
 
     res.status(201).json(savedStaff);
 
@@ -132,12 +133,12 @@ export const updateMessStaff = async (req, res) => {
       </div>
     `;
 
-    // 📧 Send email
-    await sendEmail({
-      email: updatedStaff.email,
-      subject: "Your Mess Staff Account Update",
-      html: emailHtml,
-    });
+    // 📧 Send email (email service commented out)
+    // await sendEmail({
+    //   email: updatedStaff.email,
+    //   subject: "Your Mess Staff Account Update",
+    //   html: emailHtml,
+    // });
 
     res.status(200).json({
       message: "Mess staff updated and email sent successfully",

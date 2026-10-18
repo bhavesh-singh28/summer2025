@@ -29,11 +29,9 @@ export const sendVerificationCode = async (req, res) => {
 
   try {
     const otp = generateOtp();
-    console.log(otp);
-    await sendOtpVerificationEmail(email, otp);
+    // await sendOtpVerificationEmail(email, otp); // Email service commented out
     await Otp.create({ email, otp });
 
-    console.log(`OTP ${otp} sent to ${email}`);
     res.status(200).json({ message: "Verification code sent successfully" });
   } catch (err) {
     console.error("Error sending OTP:", err);
@@ -43,7 +41,6 @@ export const sendVerificationCode = async (req, res) => {
 
 export const verifySignupOtp = async (req, res) => {
   const { email, otp } = req.body;
-  console.log("OTP verification request received:", { email, otp });
    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ message: "Invalid email address" });
     }
